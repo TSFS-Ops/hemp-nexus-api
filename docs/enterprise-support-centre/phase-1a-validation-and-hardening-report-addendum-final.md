@@ -247,3 +247,96 @@ with a per-kind source-record ACL and a server-derived safe label.
 Branch-protection settings themselves must be applied in the GitHub
 repository UI/API by an authorised operator — this environment cannot
 modify branch-protection rules.
+
+---
+
+## Addendum §21 — Local dry-run attempt of `scripts/phase-1a-behavioural-ci.sh`
+
+_Filed: 2026-07-15 (sandbox local-gate dry run)_
+
+### Result: **LOCAL GATE NOT EXECUTED — environment cannot host the disposable stack.**
+
+### Environment probed
+- Sandbox lacks Docker (`docker` not on PATH; no daemon reachable).
+- Sandbox lacks the Supabase CLI (`supabase` not on PATH; not available via
+  nixpkgs without further build).
+- Local Postgres 17.9 is present via Nix
+  (`/nix/store/…-postgresql-17.9/bin/`) and was successfully started on a
+  disposable Unix socket (`/tmp/pgrun`, port 55432, data dir `/tmp/pgdata`,
+  running as an unprivileged local `pguser`).
+
+### What was attempted
+1. Bootstrapped a Supabase-compatible skeleton on the disposable cluster:
+   `anon` / `authenticated` / `service_role` / `authenticator` /
+   `supabase_auth_admin` / `supabase_storage_admin` roles, `auth`, `storage`,
+   `extensions`, `cron` (stub) and `net` (stub) schemas, minimal `auth.users`
+   / `auth.identities` tables, `auth.uid|role|email|jwt()` stubs that read
+   `request.jwt.claim.*` GUCs, `storage.buckets|objects|foldername|filename|
+   extension()` stubs, `cron.schedule/unschedule` stubs writing to a plain
+   table, `net.http_post/http_get` no-op stubs, and a stub
+   `supabase_realtime` publication.
+2. Streamed every migration in `supabase/migrations/*.sql` through `sed` to
+   neutralise `CREATE EXTENSION pg_cron|pg_net|http|pgjwt` statements
+   (extensions unavailable in the Nix Postgres build), then applied them
+   in order with `psql -v ON_ERROR_STOP=1`.
+
+### Observed failures during the chain (first five)
+| # | Migration | Root cause (unrecoverable without Supabase runtime) |
+|---|-----------|-----------------------------------------------------|
+| 125 | `20260408124436_email_infra.sql` | Uses `pg_net`-backed DO block that returns rows; no `pg_net` in Nix build |
+| 137 | `20260410113546_*` | Depends on `public.enqueue_email(text,jsonb)` created by #125 |
+| 165 | `20260415104617_*` | Seed row FKs to an organisation not present in a bare cluster |
+| 200 / 202 | `..._email_send_log_*` | Downstream of failed #125 |
+| 208 | `20260420050022_*` | References `realtime.*` schema (not stubbable without the realtime extension) |
+
+After migration #125 the chain cascades: 10 failures inside the first 294
+files applied. The `scripts/phase-1a-behavioural-ci.sh` script explicitly
+targets a database produced by `supabase start` (i.e. the CLI-managed
+container stack), which brings its own `pg_cron`, `pg_net`, `realtime`,
+`auth`, `storage` and seed set. The bare-Nix Postgres in this sandbox
+cannot faithfully reproduce that surface, so running the behavioural proof
+against it would be **misleading** — a pass would not attest anything about
+production, and a fail could be an artefact of the missing runtime.
+
+The disposable cluster was stopped and its data directory removed after the
+probe.
+
+### Repository-side Phase 1A verification that _was_ executed here
+- **Vitest (Phase 1A subset, node env):**
+  - `src/tests/phase-1a-support-projection-regression.test.ts` — 9 / 9 passed
+  - `src/tests/phase-1a-support-schema-conformance.test.ts` — 13 / 13 passed
+  - `src/tests/phase-1a-support-behavioural.test.ts` — 26 passed, 1 skipped
+  - **Totals: 3 files, 47 passed, 1 skipped, 0 failed.**
+- Behavioural SQL proof file `supabase/tests/phase_1a_support_behavioural_proof.sql`
+  is present, syntactically well-formed, and referenced by
+  `scripts/phase-1a-behavioural-ci.sh` and by the GitHub Actions workflow
+  `.github/workflows/phase-1a-support-behavioural-security.yml`.
+- Linked-record hardening migration (`20260714220000_*`) remains in place;
+  the static regression test enforces that the last definition of
+  `add_support_ticket_linked_record` still restricts `record_kind` to
+  `'other'` and raises `SQLSTATE 42501` for every other kind.
+
+### Behavioural proof assertion count / result
+**Not measurable in this sandbox.** The proof was not executed because the
+prerequisite disposable-stack environment cannot be provisioned here. The
+count and outcome must come from a run of
+`phase-1a-support-behavioural-security` on a runner that has Docker +
+Supabase CLI (or an otherwise fully migrated Postgres).
+
+### Final verdict
+**READY FOR MANUAL GITHUB CI TRIGGER.**
+
+Interpretation:
+- The **repository is in the correct state** to be gated by the
+  `phase-1a-support-behavioural-security` GitHub Actions workflow: CI
+  script, SQL proof, hardening migration, and static regression tests are
+  all committed and green in the parts that can be executed locally.
+- The **local dry run itself is inconclusive** — not failed — because the
+  sandbox lacks Docker and the Supabase CLI needed to reproduce the
+  environment the script expects. Continuing to stub Supabase-runtime
+  extensions here would only produce a fake pass.
+- **Phase 1B remains unauthorised** until a GitHub Actions run of
+  `phase-1a-support-behavioural-security` reports success with the
+  `Phase 1A behavioural proof: PASSED` banner in its log.
+
+Do not begin Phase 1B.
