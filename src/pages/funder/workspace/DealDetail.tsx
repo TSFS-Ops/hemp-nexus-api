@@ -186,14 +186,19 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
 
   return (
     <div className="space-y-4" data-testid="fw-funder-deal-detail">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-xl font-semibold font-mono">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            Assigned deal
+          </div>
+          <h2 className="text-xl font-semibold truncate">
             {release.deal_reference}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Pack {release.evidence_pack_id ?? "—"} · v
-            {release.evidence_pack_version ?? "—"}
+          <p className="text-xs text-muted-foreground mt-1">
+            Released to {ctx.organisation.name}
+            {release.expires_at
+              ? ` · access expires ${new Date(release.expires_at).toLocaleDateString()}`
+              : ""}
           </p>
         </div>
         <FunderReleaseStatusBadge status={effectiveReleaseStatus(release)} />
@@ -220,8 +225,11 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
           <CardTitle className="text-base">Overview</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <Field label="Deal reference" value={release.deal_reference} mono />
-          <Field label="Release status" value={release.release_status} />
+          <Field label="Deal reference" value={release.deal_reference} />
+          <Field
+            label="Release status"
+            value={RELEASE_STATUS_LABELS[release.release_status] ?? release.release_status}
+          />
           <Field
             label="Released at"
             value={
@@ -231,23 +239,42 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
             }
           />
           <Field
-            label="Expires at"
+            label="Access expires"
             value={
               release.expires_at
                 ? new Date(release.expires_at).toLocaleString()
                 : "—"
             }
           />
-          <Field label="Evidence pack ID" value={release.evidence_pack_id ?? "—"} mono />
           <Field
             label="Evidence pack version"
-            value={release.evidence_pack_version ?? "—"}
+            value={
+              release.evidence_pack_version
+                ? `v${release.evidence_pack_version}`
+                : "—"
+            }
           />
+          <Field label="Funder organisation" value={ctx.organisation.name} />
           <div className="md:col-span-2">
             <Field label="Release reason" value={release.release_reason ?? "—"} />
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Permissions</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <PermRow label="View evidence summary" value={release.can_view_evidence_summary} />
+          <PermRow label="View evidence room" value={release.can_view_evidence_room} />
+          <PermRow label="Download compiled pack" value={release.can_download_compiled_pack} />
+          <PermRow label="View raw documents" value={release.can_view_raw_documents} />
+          <PermRow label="Download raw documents" value={release.can_download_raw_documents} />
+          <PermRow label="View unmasked sensitive details" value={release.can_view_unmasked_sensitive_details} />
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>
