@@ -187,22 +187,20 @@ export default function AdminSupportEscalationRuns() {
                     <>
                       <TableRow key={r.id} className={r.status === "error" ? "bg-destructive/5" : ""}>
                         <TableCell>
-                          <Collapsible
-                            open={open}
-                            onOpenChange={(v) =>
-                              setExpanded((prev) => ({ ...prev, [r.id]: v }))
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() =>
+                              setExpanded((prev) => ({ ...prev, [r.id]: !open }))
                             }
                           >
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-6 w-6">
-                                {open ? (
-                                  <ChevronDown className="h-3.5 w-3.5" />
-                                ) : (
-                                  <ChevronRight className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
-                            </CollapsibleTrigger>
-                          </Collapsible>
+                            {open ? (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
                         </TableCell>
                         <TableCell className="font-mono text-xs">
                           {fmtDate(r.started_at)}
