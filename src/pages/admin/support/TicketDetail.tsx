@@ -74,6 +74,7 @@ export default function AdminTicketDetail() {
   const [notes, setNotes] = useState<SupportMessage[]>([]);
   const [atts, setAtts] = useState<SupportAttachment[]>([]);
   const [teams, setTeams] = useState<Array<{ key: string; label: string }>>([]);
+  const [events, setEvents] = useState<SupportTicketEvent[]>([]);
   const [reply, setReply] = useState("");
   const [note, setNote] = useState("");
   const [assigneeInput, setAssigneeInput] = useState("");
