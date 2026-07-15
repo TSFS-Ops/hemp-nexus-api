@@ -72,6 +72,22 @@ const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/Counte
 const Status = lazy(() => import("@/pages/Status"));
 const Trust = lazy(() => import("@/pages/Trust"));
 
+// Enterprise Support Centre — Batch 1
+const SupportPortal = lazy(() => import("@/pages/support/Portal"));
+const SupportNewTicket = lazy(() => import("@/pages/support/NewTicket"));
+const SupportTicketDetail = lazy(() => import("@/pages/support/TicketDetail"));
+const SupportIncidents = lazy(() => import("@/pages/support/Incidents"));
+const SupportKbIndex = lazy(() =>
+  import("@/pages/support/KnowledgeBase").then((m) => ({ default: m.KbIndex }))
+);
+const SupportKbArticle = lazy(() =>
+  import("@/pages/support/KnowledgeBase").then((m) => ({ default: m.KbArticle }))
+);
+const AdminSupportQueue = lazy(() => import("@/pages/admin/support/Queue"));
+const AdminSupportTicketDetail = lazy(
+  () => import("@/pages/admin/support/TicketDetail")
+);
+
 // Batch V-UI — IDV client-facing screens (person-only IDV)
 const IdvStart = lazy(() => import("@/pages/desk/idv/IdvStart"));
 const IdvReviewQueue = lazy(() => import("@/pages/admin/idv/IdvReviewQueue"));
@@ -598,6 +614,17 @@ function App() {
                       restricts that role to the Facilitation tab and hides every other tab. */}
                   <Route path="/hq" element={<RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk"><HQ /></RequireAuth>} />
                   <Route path="/hq/:tab" element={<RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk"><HQ /></RequireAuth>} />
+
+                  {/* Enterprise Support Centre */}
+                  <Route path="/support" element={<RequireAuth><SupportPortal /></RequireAuth>} />
+                  <Route path="/support/new" element={<RequireAuth><SupportNewTicket /></RequireAuth>} />
+                  <Route path="/support/tickets/:id" element={<RequireAuth><SupportTicketDetail /></RequireAuth>} />
+                  <Route path="/support/incidents" element={<SupportIncidents />} />
+                  <Route path="/support/kb" element={<SupportKbIndex />} />
+                  <Route path="/support/kb/:slug" element={<SupportKbArticle />} />
+                  <Route path="/admin/support" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportQueue /></RequireAuth>} />
+                  <Route path="/admin/support/tickets/:id" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportTicketDetail /></RequireAuth>} />
+
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

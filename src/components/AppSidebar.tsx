@@ -1,4 +1,4 @@
-import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard, BookOpen, Coins, Landmark } from "lucide-react";
+import { Search, Handshake, Settings, ShieldCheck, Building2, LayoutDashboard, BookOpen, Coins, Landmark, LifeBuoy } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -34,6 +34,7 @@ const settingsNavItems = [
   { path: ROUTES.DASHBOARD_ACCOUNT, title: "Organisation", icon: Building2 },
   { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
   { path: ROUTES.BILLING, title: "Billing & Credits", icon: Coins },
+  { path: "/support", title: "Support", icon: LifeBuoy },
 ];
 
 export function AppSidebar({ isAdmin }: AppSidebarProps) {
@@ -127,6 +128,14 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
                     <Link to={ROUTES.ADMIN}>
                       <Settings className="h-4 w-4" />
                       <span>Admin</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin/support")} className="w-full px-2 py-1.5 text-sm">
+                    <Link to="/admin/support">
+                      <LifeBuoy className="h-4 w-4" />
+                      <span>Support Queue</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
