@@ -251,11 +251,10 @@ async function notifyStaff(
   return out;
 }
 
-async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]> {
+async function resolveStaffUserIds(admin: any, ticket: any): Promise<string[]> {
   const userIds = new Set<string>();
   if (ticket.current_assignee_user_id) userIds.add(ticket.current_assignee_user_id);
 
-  // Team members
   if (ticket.current_team_key) {
     const { data: tm } = await admin
       .from("support_team_members")
@@ -264,7 +263,6 @@ async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]
     (tm ?? []).forEach((r: any) => r.user_id && userIds.add(r.user_id));
   }
 
-  // platform admins as fallback if no team routed
   if (userIds.size === 0) {
     const { data: admins } = await admin
       .from("user_roles")
@@ -273,6 +271,11 @@ async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]
       .limit(20);
     (admins ?? []).forEach((r: any) => r.user_id && userIds.add(r.user_id));
   }
+  return Array.from(userIds);
+}
+
+async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]> {
+  const userIds = await resolveStaffUserIds(admin, ticket);
 
   const emails: string[] = [];
   for (const uid of userIds) {
