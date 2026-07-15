@@ -70,8 +70,10 @@ describe("Team management — optimistic UI with rollback", () => {
 describe("Team management — resend invitation is honestly stubbed", () => {
   it("does not fabricate a resend backend call", () => {
     // We must not silently call an admin RPC that doesn't exist.
-    expect(ORG_DETAIL).not.toMatch(/resend_funder_invite/i);
-    expect(ORG_DETAIL).not.toMatch(/p5b3ResendFunder/);
+    // (The RPC name may appear in a TODO comment — strip comments first.)
+    const code = ORG_DETAIL.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+    expect(code).not.toMatch(/\.rpc\(["'][^"']*resend[^"']*["']/i);
+    expect(code).not.toMatch(/p5b3ResendFunder/);
     // The button surfaces a documented TODO instead.
     expect(ORG_DETAIL).toMatch(/Resend not yet available|pending backend/i);
   });
