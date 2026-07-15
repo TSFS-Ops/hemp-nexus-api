@@ -387,7 +387,7 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
                   <TableRow key={p.id}>
                     <TableCell>v{p.version}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{p.status}</Badge>
+                      <Badge variant="secondary">{PACK_STATUS_LABELS[p.status] ?? p.status}</Badge>
                     </TableCell>
                     <TableCell className="text-xs">
                       {p.generated_at
