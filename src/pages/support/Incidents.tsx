@@ -117,7 +117,7 @@ function Section({
                         : "default"
                   }
                 >
-                  {i.status.replaceAll("_", " ")}
+                  {i.status.replace(/_/g, " ")}
                 </Badge>
               </div>
               <CardDescription>

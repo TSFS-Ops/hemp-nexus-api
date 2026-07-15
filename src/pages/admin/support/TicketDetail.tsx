@@ -142,7 +142,7 @@ export default function AdminTicketDetail() {
               <span className="text-xs font-mono text-muted-foreground">
                 {t.ticket_number}
               </span>
-              <Badge>{t.status.replaceAll("_", " ")}</Badge>
+              <Badge>{t.status.replace(/_/g, " ")}</Badge>
               <Badge variant="outline">{t.priority}</Badge>
               {t.current_team_key && (
                 <Badge variant="secondary">team: {t.current_team_key}</Badge>
@@ -312,7 +312,7 @@ export default function AdminTicketDetail() {
                   <SelectContent>
                     {STATUSES.map((s) => (
                       <SelectItem key={s} value={s}>
-                        {s.replaceAll("_", " ")}
+                        {s.replace(/_/g, " ")}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -158,7 +158,7 @@ export default function TicketDetail() {
                   <span className="text-xs font-mono text-muted-foreground">
                     {t.ticket_number}
                   </span>
-                  <Badge>{t.status.replaceAll("_", " ")}</Badge>
+                  <Badge>{t.status.replace(/_/g, " ")}</Badge>
                   <Badge variant="outline">{t.priority}</Badge>
                 </div>
                 <CardTitle className="text-xl">{t.subject}</CardTitle>

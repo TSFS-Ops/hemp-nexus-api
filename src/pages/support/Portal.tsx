@@ -127,7 +127,7 @@ export default function SupportPortal() {
                           {t.ticket_number}
                         </span>
                         <Badge variant={statusBadgeVariant(t.status)}>
-                          {t.status.replaceAll("_", " ")}
+                          {t.status.replace(/_/g, " ")}
                         </Badge>
                         <Badge variant="outline">{t.priority}</Badge>
                       </div>
@@ -212,7 +212,7 @@ export default function SupportPortal() {
                             : "destructive"
                         }
                       >
-                        {i.status.replaceAll("_", " ")}
+                        {i.status.replace(/_/g, " ")}
                       </Badge>
                     </div>
                     <CardDescription>
