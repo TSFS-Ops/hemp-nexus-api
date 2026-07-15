@@ -21305,6 +21305,48 @@ export type Database = {
           },
         ]
       }
+      support_escalation_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          escalated_count: number
+          escalations: Json
+          finished_at: string | null
+          first_response_count: number
+          id: string
+          resolution_count: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          escalated_count?: number
+          escalations?: Json
+          finished_at?: string | null
+          first_response_count?: number
+          id?: string
+          resolution_count?: number
+          started_at?: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          escalated_count?: number
+          escalations?: Json
+          finished_at?: string | null
+          first_response_count?: number
+          id?: string
+          resolution_count?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       support_incident_updates: {
         Row: {
           author_user_id: string | null

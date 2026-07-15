@@ -163,6 +163,14 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin/support/escalation-runs")} className="w-full px-2 py-1.5 text-sm">
+                    <Link to="/admin/support/escalation-runs">
+                      <LifeBuoy className="h-4 w-4" />
+                      <span>Escalation Runs</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
