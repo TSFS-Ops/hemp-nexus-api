@@ -21960,7 +21960,9 @@ export type Database = {
             | null
           safe_context: Json
           sla_first_response_due_at: string | null
+          sla_first_response_escalated_at: string | null
           sla_resolution_due_at: string | null
+          sla_resolution_escalated_at: string | null
           source: Database["public"]["Enums"]["support_ticket_source"]
           status: Database["public"]["Enums"]["support_ticket_status"]
           subcategory_key: string | null
@@ -22001,7 +22003,9 @@ export type Database = {
             | null
           safe_context?: Json
           sla_first_response_due_at?: string | null
+          sla_first_response_escalated_at?: string | null
           sla_resolution_due_at?: string | null
+          sla_resolution_escalated_at?: string | null
           source?: Database["public"]["Enums"]["support_ticket_source"]
           status?: Database["public"]["Enums"]["support_ticket_status"]
           subcategory_key?: string | null
@@ -22042,7 +22046,9 @@ export type Database = {
             | null
           safe_context?: Json
           sla_first_response_due_at?: string | null
+          sla_first_response_escalated_at?: string | null
           sla_resolution_due_at?: string | null
+          sla_resolution_escalated_at?: string | null
           source?: Database["public"]["Enums"]["support_ticket_source"]
           status?: Database["public"]["Enums"]["support_ticket_status"]
           subcategory_key?: string | null
@@ -24220,6 +24226,10 @@ export type Database = {
         }[]
       }
       _support_caller_org_id: { Args: never; Returns: string }
+      _support_next_priority: {
+        Args: { p: Database["public"]["Enums"]["support_ticket_priority"] }
+        Returns: Database["public"]["Enums"]["support_ticket_priority"]
+      }
       _support_next_ticket_number: { Args: never; Returns: string }
       _support_record_access: {
         Args: {
@@ -25358,6 +25368,15 @@ export type Database = {
       ensure_user_profile: {
         Args: { p_email: string; p_user_id: string }
         Returns: Json
+      }
+      escalate_overdue_support_tickets: {
+        Args: never
+        Returns: {
+          from_priority: Database["public"]["Enums"]["support_ticket_priority"]
+          gate: string
+          ticket_id: string
+          to_priority: Database["public"]["Enums"]["support_ticket_priority"]
+        }[]
       }
       escalate_support_ticket: {
         Args: {
