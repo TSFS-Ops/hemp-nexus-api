@@ -10,6 +10,20 @@ import {
   funderRoleSummary,
 } from "@/lib/funder-workspace/funder-permissions";
 
+const APPROVAL_STATUS_LABELS: Record<string, string> = {
+  admin_created: "Admin created",
+  requested: "Requested",
+  approved: "Approved",
+  rejected: "Rejected",
+  suspended: "Suspended",
+};
+
+const ORG_STATUS_LABELS: Record<string, string> = {
+  active: "Active",
+  suspended: "Suspended",
+  closed: "Closed",
+};
+
 export default function FunderWorkspaceProfile() {
   return (
     <FunderWorkspaceShell
