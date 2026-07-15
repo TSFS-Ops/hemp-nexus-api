@@ -21529,25 +21529,39 @@ export type Database = {
         Row: {
           business_hours_only: boolean
           first_response_minutes: number
+          id: string
           priority: Database["public"]["Enums"]["support_ticket_priority"]
           resolution_minutes: number
+          team_key: string | null
           updated_at: string
         }
         Insert: {
           business_hours_only?: boolean
           first_response_minutes: number
+          id?: string
           priority: Database["public"]["Enums"]["support_ticket_priority"]
           resolution_minutes: number
+          team_key?: string | null
           updated_at?: string
         }
         Update: {
           business_hours_only?: boolean
           first_response_minutes?: number
+          id?: string
           priority?: Database["public"]["Enums"]["support_ticket_priority"]
           resolution_minutes?: number
+          team_key?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "support_sla_targets_team_key_fkey"
+            columns: ["team_key"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       support_subcategories: {
         Row: {

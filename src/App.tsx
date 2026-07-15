@@ -91,6 +91,7 @@ const AdminSupportIncidents = lazy(() => import("@/pages/admin/support/Incidents
 const AdminSupportKnowledgeBase = lazy(
   () => import("@/pages/admin/support/KnowledgeBase")
 );
+const AdminSupportSla = lazy(() => import("@/pages/admin/support/Sla"));
 
 // Batch V-UI — IDV client-facing screens (person-only IDV)
 const IdvStart = lazy(() => import("@/pages/desk/idv/IdvStart"));
@@ -630,6 +631,7 @@ function App() {
                   <Route path="/admin/support/tickets/:id" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportTicketDetail /></RequireAuth>} />
                   <Route path="/admin/support/incidents" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportIncidents /></RequireAuth>} />
                   <Route path="/admin/support/kb" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportKnowledgeBase /></RequireAuth>} />
+                  <Route path="/admin/support/sla" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportSla /></RequireAuth>} />
 
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
