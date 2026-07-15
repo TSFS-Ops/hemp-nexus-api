@@ -29,6 +29,7 @@ import {
 } from "@/components/p5-batch7/DashboardShell";
 import { p5b7ApiV1ListCases, type P5Batch7ApiV1Envelope, type P5Batch7ApiV1Row } from "@/lib/p5-batch7/api-v1";
 import { FunderIdvSummary } from "@/components/idv/FunderIdvSummary";
+import { LegacyBanner } from "@/lib/funder-workspace/ui";
 
 export default function P5Batch7FunderDashboard() {
   const [q, setQ] = useState("");
@@ -49,6 +50,8 @@ export default function P5Batch7FunderDashboard() {
   );
 
   return (
+    <>
+    <div className="p-6 pb-0"><LegacyBanner surface="P-5 Batch 7 funder dashboard" /></div>
     <P5B7DashboardShell
       dashboard="funder_dashboard"
       banner={
@@ -110,5 +113,7 @@ export default function P5Batch7FunderDashboard() {
         )}
       </P5B7DetailSection>
     </P5B7DashboardShell>
+    </>
   );
 }
+
