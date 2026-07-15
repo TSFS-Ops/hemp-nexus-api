@@ -202,6 +202,9 @@ export default function AdminTicketDetail() {
                 <TabsTrigger value="attachments">
                   Attachments ({atts.length})
                 </TabsTrigger>
+                <TabsTrigger value="timeline">
+                  Timeline ({events.length})
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="customer" className="space-y-3">
