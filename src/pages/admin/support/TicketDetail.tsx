@@ -302,8 +302,13 @@ export default function AdminTicketDetail() {
                   </div>
                 ))}
               </TabsContent>
+
+              <TabsContent value="timeline" className="space-y-2">
+                <TimelineList events={events} ticket={t} />
+              </TabsContent>
             </Tabs>
           </div>
+
 
           <div className="space-y-4">
             <Card>
