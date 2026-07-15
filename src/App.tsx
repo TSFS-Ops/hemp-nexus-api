@@ -614,8 +614,20 @@ function App() {
                       restricts that role to the Facilitation tab and hides every other tab. */}
                   <Route path="/hq" element={<RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk"><HQ /></RequireAuth>} />
                   <Route path="/hq/:tab" element={<RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk"><HQ /></RequireAuth>} />
+
+                  {/* Enterprise Support Centre */}
+                  <Route path="/support" element={<RequireAuth><SupportPortal /></RequireAuth>} />
+                  <Route path="/support/new" element={<RequireAuth><SupportNewTicket /></RequireAuth>} />
+                  <Route path="/support/tickets/:id" element={<RequireAuth><SupportTicketDetail /></RequireAuth>} />
+                  <Route path="/support/incidents" element={<SupportIncidents />} />
+                  <Route path="/support/kb" element={<SupportKbIndex />} />
+                  <Route path="/support/kb/:slug" element={<SupportKbArticle />} />
+                  <Route path="/admin/support" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportQueue /></RequireAuth>} />
+                  <Route path="/admin/support/tickets/:id" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportTicketDetail /></RequireAuth>} />
+
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
+                </Routes>
                 </Routes>
                 </Suspense>
               </RouteErrorBoundary>
