@@ -107,7 +107,10 @@ Deno.serve(async (req) => {
     if (callerOrgId && buyerOrgId === callerOrgId) roles.push("buyer");
     if (callerOrgId && sellerOrgId === callerOrgId) roles.push("seller");
     const isParticipant = roles.length > 0;
+    const isPlatformAdmin = (authCtx.roles ?? []).includes("platform_admin");
+    const canSeeMatchOrgs = isParticipant || isPlatformAdmin;
 
+    // Server-internal record (used for the audit row) keeps full detail.
     const evaluated = {
       caller_user_id: actorUserId,
       caller_api_key_id: actorApiKeyId,
@@ -122,6 +125,24 @@ Deno.serve(async (req) => {
       is_participant: isParticipant,
       match_lookup_error: matchErr ? clip(matchErr.message) : null,
     };
+
+    // Client-facing view: never leak counterparty org IDs to non-participants.
+    const evaluatedForCaller = canSeeMatchOrgs
+      ? evaluated
+      : {
+          caller_user_id: actorUserId,
+          caller_api_key_id: actorApiKeyId,
+          caller_org_id: callerOrgId,
+          caller_roles_rbac: authCtx.roles ?? [],
+          match_id: matchId,
+          match_found: !!match,
+          match_org_id: null,
+          match_buyer_org_id: null,
+          match_seller_org_id: null,
+          participant_roles: roles,
+          is_participant: false,
+          match_lookup_error: matchErr ? clip(matchErr.message) : null,
+        };
 
     const auditMetadata = {
       server_request_id: serverRequestId,
