@@ -131,6 +131,14 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin/support")} className="w-full px-2 py-1.5 text-sm">
+                    <Link to="/admin/support">
+                      <LifeBuoy className="h-4 w-4" />
+                      <span>Support Queue</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
