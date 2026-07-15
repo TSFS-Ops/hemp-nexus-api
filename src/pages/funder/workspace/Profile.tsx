@@ -10,6 +10,20 @@ import {
   funderRoleSummary,
 } from "@/lib/funder-workspace/funder-permissions";
 
+const APPROVAL_STATUS_LABELS: Record<string, string> = {
+  admin_created: "Admin created",
+  requested: "Requested",
+  approved: "Approved",
+  rejected: "Rejected",
+  suspended: "Suspended",
+};
+
+const ORG_STATUS_LABELS: Record<string, string> = {
+  active: "Active",
+  suspended: "Suspended",
+  closed: "Closed",
+};
+
 export default function FunderWorkspaceProfile() {
   return (
     <FunderWorkspaceShell
@@ -37,13 +51,13 @@ export default function FunderWorkspaceProfile() {
                 <div>
                   <div className="text-xs text-muted-foreground">Approval status</div>
                   <Badge variant="default" className="mt-1">
-                    {ctx.organisation.approval_status ?? "—"}
+                    {APPROVAL_STATUS_LABELS[ctx.organisation.approval_status ?? ""] ?? "—"}
                   </Badge>
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Organisation status</div>
                   <Badge variant="secondary" className="mt-1">
-                    {ctx.organisation.status}
+                    {ORG_STATUS_LABELS[ctx.organisation.status] ?? ctx.organisation.status}
                   </Badge>
                 </div>
               </CardContent>
@@ -63,13 +77,11 @@ export default function FunderWorkspaceProfile() {
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Role</div>
-                  <div className="flex items-center gap-2">
+                  <div>
                     <Badge>{funderRoleLabel(ctx.role)}</Badge>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {ctx.role}
-                    </span>
                   </div>
                 </div>
+
                 {summary.length > 0 && (
                   <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
                     {summary.map((s) => (
