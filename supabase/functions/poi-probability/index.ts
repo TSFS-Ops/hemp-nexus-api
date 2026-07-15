@@ -53,12 +53,14 @@ Deno.serve(async (req: Request) => {
     let resolvedMatchId = match_id;
     let buyerOrgId: string | null = null;
     let sellerOrgId: string | null = null;
+    let matchInitiatorOrgId: string | null = null;
 
     if (poi_id) {
       const { data: poi } = await admin.from("pois").select("*").eq("id", poi_id).maybeSingle();
       if (!poi) throw new ApiException("NOT_FOUND", "POI not found", 404);
       buyerOrgId = poi.buyer_entity_id;
       sellerOrgId = poi.seller_entity_id;
+      resolvedMatchId = resolvedMatchId || poi.match_id || null;
     }
 
     if (resolvedMatchId) {
@@ -66,7 +68,17 @@ Deno.serve(async (req: Request) => {
       if (matchData) {
         buyerOrgId = buyerOrgId || matchData.buyer_org_id;
         sellerOrgId = sellerOrgId || matchData.seller_org_id;
+        matchInitiatorOrgId = matchData.org_id ?? null;
       }
+    }
+
+    // Participation gate — only participants (or platform_admin) may compute
+    // or read another org's compliance/screening posture through this probe.
+    const isPlatformAdmin = (authCtx.roles ?? []).includes("platform_admin");
+    const participantOrgs = [buyerOrgId, sellerOrgId, matchInitiatorOrgId].filter(Boolean) as string[];
+    const isParticipant = participantOrgs.includes(orgId);
+    if (!isPlatformAdmin && !isParticipant) {
+      throw new ApiException("FORBIDDEN", "Caller is not a participant on this match/POI", 403);
     }
 
     // Factor 1: Entity verification (20% weight)
