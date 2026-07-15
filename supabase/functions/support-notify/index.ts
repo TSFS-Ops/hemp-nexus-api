@@ -156,12 +156,55 @@ async function dispatchTicketEvent(admin: any, eventId: string) {
       break;
     }
     case "auto_escalated": {
-      results.push(...(await notifyStaff(admin, t, {
-        alertKind: "auto-escalated",
-        detail: `SLA ${String(ev.payload?.gate ?? "").replace(/_/g, " ")} breached; priority raised from ${ev.payload?.from_priority} to ${ev.payload?.to_priority}.`,
-        slaGate: (ev.payload?.gate as string) ?? null,
-        ctaUrl: adminUrl,
-      })));
+      const gate = String(ev.payload?.gate ?? "").replace(/_/g, " ");
+      const fromP = ev.payload?.from_priority;
+      const toP = ev.payload?.to_priority;
+      const staffDetail = `SLA ${gate} breached; priority raised from ${fromP} to ${toP}.`;
+
+      // Staff email
+      results.push(
+        ...(await notifyStaff(admin, t, {
+          alertKind: "auto-escalated",
+          detail: staffDetail,
+          slaGate: (ev.payload?.gate as string) ?? null,
+          ctaUrl: adminUrl,
+        }))
+      );
+
+      // Customer email — reassures the requester that we've prioritised
+      // their ticket. Independent idempotency key so it never collides
+      // with staff sends.
+      if (customerEmail) {
+        results.push(
+          await enqueue(admin, {
+            templateName: "support-ticket-customer-update",
+            recipientEmail: customerEmail,
+            idempotencyKey: `support-cust-escalated-${ev.id}`,
+            templateData: {
+              ticketNumber: t.ticket_number,
+              subject: t.subject,
+              headline: "We've escalated your ticket",
+              bodyText: `Your ticket has been auto-escalated to ${toP} priority because our ${gate} target was missed. A senior team member will pick it up shortly.`,
+              status: t.status,
+              priority: toP ?? t.priority,
+              ctaUrl: customerUrl,
+            },
+          })
+        );
+      }
+
+      // In-app notifications — one per staff recipient user + customer.
+      results.push(
+        ...(await createInAppNotifications(admin, t, {
+          type: "support_ticket_auto_escalated",
+          staffTitle: `Ticket ${t.ticket_number} auto-escalated`,
+          staffBody: staffDetail,
+          staffLink: `/admin/support/tickets/${t.id}`,
+          customerTitle: "Your support ticket was escalated",
+          customerBody: `We've raised ${t.ticket_number} to ${toP} priority so a senior team member can respond faster.`,
+          customerLink: `/support/tickets/${t.id}`,
+        }))
+      );
       break;
     }
     default:
