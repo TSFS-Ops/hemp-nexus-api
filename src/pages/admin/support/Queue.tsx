@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -84,21 +86,144 @@ export default function AdminSupportQueue() {
     };
   }, [filter, toast]);
 
+  const metrics = (() => {
+    if (!rows) return null;
+    const now = Date.now();
+    const open = rows.filter(
+      (t) => !["resolved", "closed", "cancelled"].includes(t.status)
+    );
+    const frBreached = rows.filter(
+      (t) =>
+        !t.first_response_at &&
+        t.sla_first_response_due_at &&
+        new Date(t.sla_first_response_due_at).getTime() < now
+    ).length;
+    const resBreached = rows.filter(
+      (t) =>
+        !["resolved", "closed", "cancelled"].includes(t.status) &&
+        t.sla_resolution_due_at &&
+        new Date(t.sla_resolution_due_at).getTime() < now
+    ).length;
+    const byPriority = rows.reduce<Record<string, number>>((a, t) => {
+      a[t.priority] = (a[t.priority] ?? 0) + 1;
+      return a;
+    }, {});
+    // Avg first-response minutes on tickets that have one
+    const responded = rows.filter((t) => t.first_response_at);
+    const avgFrMin = responded.length
+      ? Math.round(
+          responded.reduce(
+            (a, t) =>
+              a +
+              (new Date(t.first_response_at!).getTime() -
+                new Date(t.created_at).getTime()) /
+                60000,
+            0
+          ) / responded.length
+        )
+      : null;
+    return {
+      total: rows.length,
+      open: open.length,
+      frBreached,
+      resBreached,
+      byPriority,
+      avgFrMin,
+    };
+  })();
+
+  function exportCsv() {
+    if (!rows || rows.length === 0) {
+      toast({ title: "Nothing to export", variant: "destructive" });
+      return;
+    }
+    const headers = [
+      "ticket_number",
+      "subject",
+      "status",
+      "priority",
+      "category_key",
+      "subcategory_key",
+      "current_team_key",
+      "current_assignee_user_id",
+      "created_at",
+      "updated_at",
+      "first_response_at",
+      "sla_first_response_due_at",
+      "sla_resolution_due_at",
+    ];
+    const esc = (v: unknown) => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv =
+      headers.join(",") +
+      "\n" +
+      rows
+        .map((r) =>
+          headers.map((h) => esc((r as unknown as Record<string, unknown>)[h])).join(",")
+        )
+        .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `support-queue-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: `Exported ${rows.length} tickets` });
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-4">
-        <div>
-          <Link
-            to="/hq"
-            className="text-sm text-muted-foreground hover:text-foreground"
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Link
+              to="/hq"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← HQ
+            </Link>
+            <h1 className="text-2xl font-semibold mt-1">Support queue</h1>
+            <p className="text-sm text-muted-foreground">
+              All open support requests. Click a row to triage, respond, or reassign.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCsv}
+            disabled={!rows || rows.length === 0}
           >
-            ← HQ
-          </Link>
-          <h1 className="text-2xl font-semibold mt-1">Support queue</h1>
-          <p className="text-sm text-muted-foreground">
-            All open support requests. Click a row to triage, respond, or reassign.
-          </p>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
         </div>
+
+        {metrics && (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <MetricTile label="In view" value={metrics.total} />
+            <MetricTile label="Open" value={metrics.open} />
+            <MetricTile
+              label="FR breached"
+              value={metrics.frBreached}
+              tone={metrics.frBreached > 0 ? "danger" : "default"}
+            />
+            <MetricTile
+              label="Resolution breached"
+              value={metrics.resBreached}
+              tone={metrics.resBreached > 0 ? "danger" : "default"}
+            />
+            <MetricTile
+              label="Avg first response"
+              value={metrics.avgFrMin === null ? "—" : `${metrics.avgFrMin}m`}
+            />
+          </div>
+        )}
 
         <Card>
           <CardContent className="pt-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -213,5 +338,28 @@ export default function AdminSupportQueue() {
         )}
       </div>
     </div>
+  );
+}
+
+function MetricTile({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: number | string;
+  tone?: "default" | "danger";
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-4 pb-3">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div
+          className={`text-2xl font-semibold mt-1 ${tone === "danger" ? "text-destructive" : ""}`}
+        >
+          {value}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
