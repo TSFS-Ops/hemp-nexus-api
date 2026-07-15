@@ -34,6 +34,7 @@ const settingsNavItems = [
   { path: ROUTES.DASHBOARD_ACCOUNT, title: "Organisation", icon: Building2 },
   { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
   { path: ROUTES.BILLING, title: "Billing & Credits", icon: Coins },
+  { path: "/support", title: "Support", icon: LifeBuoy },
 ];
 
 export function AppSidebar({ isAdmin }: AppSidebarProps) {
