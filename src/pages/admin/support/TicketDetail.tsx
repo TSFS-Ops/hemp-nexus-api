@@ -87,18 +87,20 @@ export default function AdminTicketDetail() {
 
   const load = useCallback(async () => {
     try {
-      const [ticket, m, n, a, tm] = await Promise.all([
+      const [ticket, m, n, a, tm, ev] = await Promise.all([
         getTicketInternal(id, "admin ticket detail view"),
         listCustomerMessages(id),
         listInternalNotes(id),
         listAttachments(id),
         listTeams(),
+        listTicketEvents(id).catch(() => [] as SupportTicketEvent[]),
       ]);
       setT(ticket);
       setMsgs(m);
       setNotes(n);
       setAtts(a);
       setTeams(tm);
+      setEvents(ev);
       setStatusSel(ticket.status);
       setPrioritySel(ticket.priority);
       setTeamSel(ticket.current_team_key ?? "");
