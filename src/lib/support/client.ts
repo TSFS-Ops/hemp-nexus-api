@@ -253,6 +253,7 @@ export type SupportTicketEvent = {
 export async function listTicketEvents(id: string): Promise<SupportTicketEvent[]> {
   const r = await rpc("list_support_ticket_events_internal", { _ticket_id: id });
   return (unwrap<SupportTicketEvent[]>(r) ?? []) as SupportTicketEvent[];
+}
 export async function postCustomerMessage(id: string, body: string) {
   const r = await rpc("post_support_ticket_customer_message", {
     _ticket_id: id,
