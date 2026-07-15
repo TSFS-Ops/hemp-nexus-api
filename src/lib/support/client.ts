@@ -240,6 +240,19 @@ export async function listInternalNotes(id: string): Promise<SupportMessage[]> {
   const r = await rpc("list_support_ticket_internal_notes", { _ticket_id: id });
   return unwrap<SupportMessage[]>(r);
 }
+
+export type SupportTicketEvent = {
+  id: string;
+  ticket_id: string;
+  event_kind: string;
+  actor_user_id: string | null;
+  represented_user_id: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+};
+export async function listTicketEvents(id: string): Promise<SupportTicketEvent[]> {
+  const r = await rpc("list_support_ticket_events_internal", { _ticket_id: id });
+  return (unwrap<SupportTicketEvent[]>(r) ?? []) as SupportTicketEvent[];
 export async function postCustomerMessage(id: string, body: string) {
   const r = await rpc("post_support_ticket_customer_message", {
     _ticket_id: id,
