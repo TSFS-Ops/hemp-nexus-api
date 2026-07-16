@@ -111,7 +111,7 @@ jobs:
       postgres:
         image: supabase/postgres:15.14.1.147
         env:
-          POSTGRES_USER: postgres
+          POSTGRES_USER: supabase_admin
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
         ports:
@@ -125,7 +125,7 @@ jobs:
     env:
       PGHOST: 127.0.0.1
       PGPORT: "5432"
-      PGUSER: postgres
+      PGUSER: supabase_admin
       PGPASSWORD: postgres
       PGDATABASE: postgres
       # Fixed IDs from supabase/migrations/20260712174259_*.sql
