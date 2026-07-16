@@ -206,7 +206,6 @@ jobs:
             LANGUAGE sql IMMUTABLE AS $fn$
               SELECT split_part(name, '.', array_length(string_to_array(name,'.'),1))
             $fn$;
-          CREATE SCHEMA IF NOT EXISTS cron;
           CREATE EXTENSION IF NOT EXISTS pg_cron;
           DO $do$
           BEGIN
