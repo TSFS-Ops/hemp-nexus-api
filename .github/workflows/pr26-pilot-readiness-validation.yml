@@ -109,7 +109,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: supabase/postgres:15.14.1.147
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -145,8 +145,9 @@ jobs:
       - name: Prepare artifact dir
         run: mkdir -p validation-artifact
 
-      - name: Bootstrap Supabase-compatible schemas & roles
+      - name: Bootstrap Supabase-compatible schemas, roles, extensions & realtime publication [fail-closed]
         run: |
+          set -euo pipefail
           psql -v ON_ERROR_STOP=1 <<'SQL' 2>&1 | tee validation-artifact/20-bootstrap.txt
           -- Deterministic compatibility surface only. Does not prove
           -- real Supabase Auth/Storage/RLS behaviour.
@@ -205,11 +206,41 @@ jobs:
             LANGUAGE sql IMMUTABLE AS $fn$
               SELECT split_part(name, '.', array_length(string_to_array(name,'.'),1))
             $fn$;
+          CREATE SCHEMA IF NOT EXISTS cron;
+          CREATE EXTENSION IF NOT EXISTS pg_cron;
+          DO $do$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+              CREATE PUBLICATION supabase_realtime;
+            END IF;
+          END
+          $do$;
           SQL
+
+      - name: Preflight - verify disposable Supabase-compatible environment (fail-closed)
+        run: |
+          set -euo pipefail
+          fail=0
+          check() { echo "PASS  $1"; }
+          failcheck() { echo "FAIL  $1"; fail=1; }
+          LIVE_PROJECT_REF="ugrfyhwlonlmlcmcpcdm"
+          if [ "$PGHOST" = "127.0.0.1" ] || [ "$PGHOST" = "localhost" ]; then check "pghost_is_local"; else failcheck "pghost_is_local"; fi
+          if env | grep -F -q "$LIVE_PROJECT_REF"; then failcheck "no_live_project_ref_in_env"; else check "no_live_project_ref_in_env"; fi
+          CRON_EXT=$(psql -v ON_ERROR_STOP=1 -tAc "select count(*) from pg_extension where extname = 'pg_cron'")
+          if [ "$CRON_EXT" = "1" ]; then check "pg_cron_extension_present"; else failcheck "pg_cron_extension_present"; fi
+          CRON_SCHEMA=$(psql -v ON_ERROR_STOP=1 -tAc "select count(*) from pg_namespace where nspname = 'cron'")
+          if [ "$CRON_SCHEMA" = "1" ]; then check "cron_schema_present"; else failcheck "cron_schema_present"; fi
+          REALTIME_PUB=$(psql -v ON_ERROR_STOP=1 -tAc "select count(*) from pg_publication where pubname = 'supabase_realtime'")
+          if [ "$REALTIME_PUB" = "1" ]; then check "supabase_realtime_publication_present"; else failcheck "supabase_realtime_publication_present"; fi
+          ROLE_COUNT=$(psql -v ON_ERROR_STOP=1 -tAc "select count(*) from pg_roles where rolname in ('anon','authenticated','service_role','authenticator')")
+          if [ "$ROLE_COUNT" = "4" ]; then check "required_roles_present"; else failcheck "required_roles_present"; fi
+          SCHEMA_COUNT=$(psql -v ON_ERROR_STOP=1 -tAc "select count(*) from pg_namespace where nspname in ('auth','storage','extensions','cron')")
+          if [ "$SCHEMA_COUNT" = "4" ]; then check "required_schemas_present"; else failcheck "required_schemas_present"; fi
+          if [ "$fail" -eq 0 ]; then echo "PREFLIGHT_ALL_OK" | tee validation-artifact/20b-preflight.txt; else echo "PREFLIGHT_FAILED" | tee validation-artifact/20b-preflight.txt; exit 1; fi
 
       - name: Apply migrations (first pass, clean DB) [fail-closed]
         run: |
-          set -e
+          set -euo pipefail
           shopt -s nullglob
           : > validation-artifact/21-migrate-first.txt
           for f in supabase/migrations/*.sql; do
@@ -220,7 +251,7 @@ jobs:
 
       - name: Validate pilot fixture migration source defines readiness RPC (fail-closed)
         run: |
-          set -e
+          set -euo pipefail
           MIGRATION_FILE="supabase/migrations/20260713090000_pilot_fixture_and_readiness_rpc.sql"
           if [ ! -f "$MIGRATION_FILE" ]; then
           echo "MIGRATION_FAIL: $MIGRATION_FILE not found" >&2
@@ -233,7 +264,7 @@ jobs:
           echo "MIGRATION_FILE_PRESENT_AND_DEFINES_RPC" | tee validation-artifact/19-migration-source-check.txt
       - name: Seed CI-only synthetic platform-admin for readiness RPC (fail-closed, disposable DB only)
         run: |
-          set -e
+          set -euo pipefail
           set -o pipefail
           CI_ADMIN_ID="dddddddd-dddd-4ddd-addd-dddddddddddd"
           psql -v ON_ERROR_STOP=1 -c "CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS \$fn\$ SELECT '${CI_ADMIN_ID}'::uuid \$fn\$;" 2>&1 | tee validation-artifact/22a-seed-ci-admin.txt
@@ -249,7 +280,7 @@ jobs:
           echo "CI_SYNTHETIC_ADMIN_VERIFIED" | tee -a validation-artifact/22a-seed-ci-admin.txt
       - name: Fixture and readiness verification via fw_admin_check_pilot_fixtures_v1 (fail-closed)
         run: |
-          set -e
+          set -euo pipefail
           set -o pipefail
           RPC_OUT=$(psql -v ON_ERROR_STOP=1 -t -A -F',' -c "SELECT check_key, status FROM public.fw_admin_check_pilot_fixtures_v1() ORDER BY check_key;")
           echo "$RPC_OUT" | tee validation-artifact/22-fixtures.txt
@@ -270,7 +301,7 @@ jobs:
 
       - name: Isolation invariant (fail-closed)
         run: |
-          set -e
+          set -euo pipefail
           psql -v ON_ERROR_STOP=1 <<SQL 2>&1 | tee validation-artifact/23-isolation.txt
                 -- Isolation Test Fund must never appear on any release row.
           -- This check does NOT require any release to exist for the
@@ -291,7 +322,7 @@ jobs:
 
       - name: Reset DB and re-apply migrations (idempotency) [fail-closed]
         run: |
-          set -e
+          set -euo pipefail
           psql -v ON_ERROR_STOP=1 <<'SQL' 2>&1 | tee validation-artifact/24-reset.txt
           DROP SCHEMA IF EXISTS public CASCADE;
           CREATE SCHEMA public;
@@ -308,7 +339,7 @@ jobs:
       - name: Final gate - all mandatory checks must be PASS
         if: always()
         run: |
-          set -e
+          set -euo pipefail
           fail=0
           pass_or_fail() {
             local label="$1"; local file="$2"; local needle="$3"
@@ -326,6 +357,7 @@ jobs:
             echo
             echo "## Mandatory checks"
             pass_or_fail "bootstrap"        validation-artifact/20-bootstrap.txt      "CREATE"
+                        pass_or_fail "preflight"       validation-artifact/20b-preflight.txt "PREFLIGHT_ALL_OK"
             pass_or_fail "migrate_first"    validation-artifact/21-migrate-first.txt  "FIRST_PASS=ok"
                     pass_or_fail "migration_source"  validation-artifact/19-migration-source-check.txt  "MIGRATION_FILE_PRESENT_AND_DEFINES_RPC"
                     pass_or_fail "ci_admin_seed"  validation-artifact/22a-seed-ci-admin.txt  "CI_SYNTHETIC_ADMIN_VERIFIED"
