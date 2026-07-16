@@ -231,6 +231,9 @@ jobs:
             inserted_at timestamp NOT NULL DEFAULT now(),
             PRIMARY KEY (id, inserted_at)
           );
+          CREATE OR REPLACE FUNCTION realtime.topic() RETURNS text AS $$
+            SELECT nullif(current_setting('realtime.topic', true), '')::text;
+          $$ LANGUAGE sql STABLE;
           SQL
 
       - name: Preflight - verify disposable Supabase-compatible environment (fail-closed)
