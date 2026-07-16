@@ -157,4 +157,9 @@ $function$;
 -- 1.5: Remove broken/duplicate cron jobs
 -- =============================================================
 SELECT cron.unschedule('sahpra-daily-refresh');
-SELECT cron.unschedule('lifecycle-scheduler-daily');
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'lifecycle-scheduler-daily') THEN
+    PERFORM cron.unschedule('lifecycle-scheduler-daily');
+  END IF;
+END $$;
