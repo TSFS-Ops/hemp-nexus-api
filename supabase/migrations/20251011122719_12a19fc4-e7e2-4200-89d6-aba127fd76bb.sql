@@ -373,7 +373,7 @@ INSERT INTO public.categories (name, slug, description) VALUES
   ('Supplies', 'supplies', 'General supplies and materials');
 
 -- Create storage bucket for compliance documents
-INSERT INTO storage.buckets (id, name, public) VALUES ('compliance-documents', 'compliance-documents', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('compliance-documents', 'compliance-documents', false) ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for compliance documents
 CREATE POLICY "Users can upload compliance docs for their org"
