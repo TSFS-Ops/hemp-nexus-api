@@ -139,6 +139,7 @@ updated_at timestamptz NOT NULL DEFAULT now()
 INSERT INTO storage.buckets (id, name, public) VALUES ('kyc-documents', 'kyc-documents', false) ON CONFLICT (id) DO NOTHING;
 
 -- Storage RLS for kyc-documents bucket
+DROP POLICY IF EXISTS "Users upload kyc docs for own org" ON storage.objects;
 CREATE POLICY "Users upload kyc docs for own org"
 ON storage.objects FOR INSERT
 WITH CHECK (
@@ -148,6 +149,7 @@ SELECT org_id::text FROM profiles WHERE id = auth.uid()
 )
 );
 
+DROP POLICY IF EXISTS "Users view kyc docs for own org" ON storage.objects;
 CREATE POLICY "Users view kyc docs for own org"
 ON storage.objects FOR SELECT
 USING (
@@ -157,6 +159,7 @@ SELECT org_id::text FROM profiles WHERE id = auth.uid()
 )
 );
 
+DROP POLICY IF EXISTS "Service role manages kyc storage" ON storage.objects;
 CREATE POLICY "Service role manages kyc storage"
 ON storage.objects FOR ALL
 USING (bucket_id = 'kyc-documents' AND (auth.jwt() ->> 'role') = 'service_role')
