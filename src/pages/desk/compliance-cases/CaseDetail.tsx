@@ -94,7 +94,8 @@ export default function DeskComplianceCaseDetail() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
+    <DeskLayout>
+      <div className="mx-auto max-w-4xl space-y-4">
       <Button variant="ghost" size="sm" onClick={() => nav(-1)}>
         <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
       </Button>
