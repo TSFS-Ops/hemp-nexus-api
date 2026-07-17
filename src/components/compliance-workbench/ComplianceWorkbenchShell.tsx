@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdapterModeBanner } from "./AdapterModeBanner";
+import { DashboardLayout } from "@/components/DashboardLayout";
 
 const NAV = [
   { to: "/hq/compliance", exact: true, label: "Overview", icon: LayoutGrid },
