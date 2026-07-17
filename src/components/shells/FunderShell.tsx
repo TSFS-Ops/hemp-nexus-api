@@ -117,7 +117,7 @@ function FunderSidebar() {
   );
 }
 
-export function FunderShell() {
+export function FunderShell({ children }: { children?: import("react").ReactNode }) {
   const { pathname } = useLocation();
   const { user } = useAuth();
 
