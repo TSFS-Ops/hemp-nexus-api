@@ -265,3 +265,38 @@ Retain the `evidence/pr-26-validation/` screenshots and the run log.
 - Human: sections 1, 2, 11, and 12 require a developer with a checkout of `fix/pilot-readiness-checks`, a disposable Postgres/Supabase instance, and an authenticated PR #26 branch preview.
 
 **PR #26 must remain a draft and the manual pilot must remain paused until both the CI workflow reports green and the human sections return a fully ticked checklist.**
+
+## CI validation record — read-only baseline comparison + typecheck fix (2026-07-17)
+
+This section records the results of a read-only, tightly-scoped CI validation pass performed after the migration idempotency hardening above reached a fully green Disposable DB job. It exists to give a durable, auditable answer to one question: **does PR #26 introduce any new test regressions relative to `main`?**
+
+**Heads tested**
+
+- PR head tested: `848814e` (full-suite baseline comparison), workflow then updated at `8fb92a9` (typecheck-ordering fix; re-validation run recorded separately once complete).
+- Base SHA tested: `37e7826` (`main`, HEAD at time of test).
+- Both were run via `workflow_dispatch` on `.github/workflows/pr26-pilot-readiness-validation.yml`, selecting each branch, so the workflow file, Bun setup, environment variables, and Vitest invocation are identical and native to that branch.
+
+**Full-suite comparison**
+
+| | PR (`848814e`) | base / `main` (`37e7826`) |
+|---|---|---|
+| Disposable DB (migrations/idempotency/fixtures/isolation) | green | green |
+| Focused Funder Workspace suite | green | green |
+| Full Vitest suite | 35 tests failed / 20 files | 60 tests failed / 22 files |
+| Typecheck | not executing (see below) | not executing (see below) |
+
+- Common to both branches (pre-existing baseline failures, same error signature): **35**.
+- PR-introduced regressions (pass on `main`, fail on PR branch): **0**.
+- Main-only failures, i.e. cases where the PR branch is healthier than `main` (fail on `main`, pass on PR branch): **25**, across `funder-workspace-batch3-funder-ui.test.ts` (1 — expected, this PR updated that assertion) and `phase-1a-support-behavioural.test.ts` (24 — unrelated to this PR's scope; not further diagnosed here).
+
+**Conclusion: PR #26 introduces zero test regressions relative to `main`.** The 35 shared failures are pre-existing repository baseline debt (PayFast, registry, notifications, audit, support-ticket and public-API areas) and are intentionally **not** fixed inside this PR; they require a separate workstream.
+
+**Typecheck defect found and fixed**
+
+The workflow already defined a `Typecheck (fail-closed)` step (`bunx tsgo --noEmit -p tsconfig.app.json`), but it was positioned after `Full Vitest suite (fail-closed)`. Because GitHub Actions skips later steps once a step fails, and the Full Vitest suite step has been failing (on the pre-existing baseline failures above), the Typecheck step was never reached in any run — it silently never executed, despite the job being titled "...- typecheck". Fixed in commit `8fb92a9` by moving the existing step to run immediately after `Install dependencies`, before either test step, so it always executes; no `continue-on-error` is used, so any diagnostic still fails the step and the job. Its output continues to be written to `validation-artifact/12-typecheck.txt` and is included in the existing `pr26-source-validation` artifact upload.
+
+Typecheck result from the first run against the corrected workflow: **to be populated once that run completes** (see the workflow run referenced in the PR conversation for the final head SHA and result).
+
+**Scope discipline:** no PayFast, registry, notifications, audit, support-ticket, or public-API code was modified during this comparison or the typecheck fix. Only `.github/workflows/pr26-pilot-readiness-validation.yml` (step reorder) and this documentation file were changed.
+
+**PR #26 remains Draft** and has not been merged.
