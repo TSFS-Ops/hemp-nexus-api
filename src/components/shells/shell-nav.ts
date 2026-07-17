@@ -1,3 +1,4 @@
+import { Handshake } from "lucide-react";
 /**
  * Shared shell navigation configuration.
  *
