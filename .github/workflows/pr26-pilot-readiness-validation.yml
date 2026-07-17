@@ -74,7 +74,7 @@ jobs:
       - name: Typecheck (fail-closed)
         run: |
           set -o pipefail
-          bunx tsgo --noEmit -p tsconfig.app.json 2>&1 | tee validation-artifact/12-typecheck.txt
+          bunx tsc --noEmit -p tsconfig.app.json 2>&1 | tee validation-artifact/12-typecheck.txt
 
       - name: Focused Funder Workspace tests (fail-closed)
         run: |
