@@ -5,7 +5,6 @@
  * not a funder-org member.
  */
 import { ReactNode, useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import {
@@ -20,18 +19,10 @@ interface Props {
   children: (ctx: CurrentFunderContext) => ReactNode;
 }
 
-const NAV: Array<{ href: string; label: string }> = [
-  { href: "/funder/workspace", label: "Dashboard" },
-  { href: "/funder/workspace/deals", label: "Deals" },
-  { href: "/funder/workspace/activity", label: "Activity" },
-  { href: "/funder/workspace/profile", label: "Profile" },
-];
-
 export function FunderWorkspaceShell({ title, description, children }: Props) {
   const [ctx, setCtx] = useState<CurrentFunderContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const location = useLocation();
 
   useEffect(() => {
     let alive = true;
