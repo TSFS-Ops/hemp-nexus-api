@@ -363,7 +363,6 @@ jobs:
           cat validation-artifact/27-types-diff.txt || true
           echo "===TYPES_DIFF_END==="
           echo "DIFF_LINE_COUNT=$(wc -l < validation-artifact/27-types-diff.txt)"
-        continue-on-error: true
 
       - name: Reset DB and re-apply migrations (idempotency) [fail-closed]
         run: |
