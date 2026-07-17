@@ -182,7 +182,7 @@ export function AdminShell({ children }: { children?: ReactNode }) {
             </div>
           </header>
           <div className="flex-1 min-w-0">
-            <Outlet />
+            {children ?? <Outlet />}
           </div>
         </main>
       </div>
