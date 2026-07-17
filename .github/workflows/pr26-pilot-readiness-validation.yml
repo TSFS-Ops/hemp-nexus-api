@@ -71,6 +71,11 @@ jobs:
       - name: Install dependencies (fail-closed)
         run: bun install --frozen-lockfile 2>&1 | tee validation-artifact/01-install.txt
 
+      - name: Typecheck (fail-closed)
+        run: |
+          set -o pipefail
+          bunx tsgo --noEmit -p tsconfig.app.json 2>&1 | tee validation-artifact/12-typecheck.txt
+
       - name: Focused Funder Workspace tests (fail-closed)
         run: |
           set -o pipefail
@@ -89,11 +94,6 @@ jobs:
         run: |
           set -o pipefail
           bunx vitest run --reporter=verbose 2>&1 | tee validation-artifact/11-full-vitest.txt
-
-      - name: Typecheck (fail-closed)
-        run: |
-          set -o pipefail
-          bunx tsgo --noEmit -p tsconfig.app.json 2>&1 | tee validation-artifact/12-typecheck.txt
 
       - name: Upload source validation artifact
         if: always()
