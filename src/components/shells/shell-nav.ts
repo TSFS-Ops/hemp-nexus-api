@@ -69,7 +69,7 @@ export const ADMIN_SHELL_NAV: ShellNavGroup[] = [
       { to: "/hq/spine", label: "Platform Spine", icon: Workflow },
       { to: "/hq/users", label: "Users", icon: Users },
       { to: "/hq/organisations", label: "Organisations", icon: Building2 },
-      { to: "/hq/engagements", label: "Engagements", icon: Handshake_ },
+      { to: "/hq/engagements", label: "Engagements", icon: Handshake },
       { to: "/hq/facilitation", label: "Facilitation", icon: Signpost },
     ],
   },
@@ -170,5 +170,5 @@ export const FUNDER_SHELL_NAV: ShellNavGroup[] = [
   },
 ];
 
-const Handshake_: LucideIcon = Handshake ?? Workflow;
+const Handshake: LucideIcon = Handshake ?? Workflow;
 
