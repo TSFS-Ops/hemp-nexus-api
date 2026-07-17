@@ -27,7 +27,8 @@ export default function DeskComplianceCases() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
+    <DeskLayout>
+      <div className="mx-auto max-w-4xl space-y-4">
       <header className="flex items-center gap-2">
         <ShieldCheck className="h-5 w-5 text-primary" />
         <div>
