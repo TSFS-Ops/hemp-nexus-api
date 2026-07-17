@@ -7,7 +7,7 @@ This package validates PR #26 (branch `fix/pilot-readiness-checks`), which intro
 - `supabase/migrations/20260713090000_pilot_fixture_and_readiness_rpc.sql` - creates the DEMO/TEST trading fixtures (buyer, seller, canonical match, documents, evidence chain) and reuses the two pre-existing pilot funder-organisation rows.
 - `public.fw_admin_check_pilot_fixtures_v1()` - the independent readiness-check RPC. This RPC is a real, intentional deliverable of PR #26. It does not exist on `main` today and will exist only once this PR merges. An earlier draft of this document incorrectly claimed no such RPC exists or should exist; that claim applied only to `main` before this PR, not to PR #26 itself, and is corrected here.
 
-The current Lovable workspace agent cannot execute this package: it has no git-branch access, no disposable database, and no authenticated preview browser session. This package must be executed by a human operator or by CI (`.github/workflows/pr26-pilot-readiness-validation.yml`) in an environment that satisfies **all** of the following preconditions:
+The current Lovable workspace agent cannot run this package: it has no git-branch access, no disposable database, and no authenticated preview browser session. This package must be executed by a human operator or by CI (`.github/workflows/pr26-pilot-readiness-validation.yml`) in an environment that satisfies **all** of the following preconditions:
 
 - git access to the repository, able to check out branch `fix/pilot-readiness-checks` / PR #26.
 - a **disposable** local PostgreSQL 15 database (or scratch Supabase project) that shares no data with any tenant.
@@ -256,7 +256,7 @@ Retain the `evidence/pr-26-validation/` screenshots and the run log.
 
 - PR #26 is not validated by this document. It is validated only after a human/CI operator runs every section above against a disposable database and every checklist item in section 12 is ticked.
 - No change has been made to the live Lovable Cloud database.
-- The current Lovable workspace agent cannot execute this package: it has no git-branch access, no disposable database, and no authenticated preview browser session.
+- The current Lovable workspace agent cannot run this package: it has no git-branch access, no disposable database, and no authenticated preview browser session.
 - An earlier commit on `main` (26ebbd0, "Prepared PR #26 validation pkg") described this same RPC as fictional and used table/column names that do not match the actual migration. That version was written before PR #26's fixture migration and RPC existed in any reachable branch and is superseded by this document.
 
 ## Who must run this package
