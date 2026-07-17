@@ -12,11 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   AdapterModeBanner,
   CWStatusBadge,
+  CaseDetailSkeleton,
 } from "@/components/compliance-workbench";
 import {
   COMPLIANCE_SENDER_NAME,
@@ -58,9 +58,8 @@ export default function DeskComplianceCaseDetail() {
 
   if (!d) return (
     <DeskLayout>
-      <div className="mx-auto max-w-4xl space-y-3">
-        <Skeleton className="h-24" />
-        <Skeleton className="h-48" />
+      <div className="mx-auto max-w-4xl">
+        <CaseDetailSkeleton />
       </div>
     </DeskLayout>
   );
