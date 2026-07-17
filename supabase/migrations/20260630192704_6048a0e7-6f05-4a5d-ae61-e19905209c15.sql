@@ -4,6 +4,7 @@
 -- evidence files. Restrictive policies AND with all permissive policies,
 -- so any future permissive policy mistake remains blocked for these roles.
 
+DROP POLICY IF EXISTS "fevd_delete_block_clients" ON storage.objects;
 CREATE POLICY "fevd_delete_block_clients"
 ON storage.objects
 AS RESTRICTIVE
@@ -11,6 +12,7 @@ FOR DELETE
 TO anon, authenticated
 USING (bucket_id <> 'facilitation-evidence');
 
+DROP POLICY IF EXISTS "fevd_update_block_clients" ON storage.objects;
 CREATE POLICY "fevd_update_block_clients"
 ON storage.objects
 AS RESTRICTIVE
