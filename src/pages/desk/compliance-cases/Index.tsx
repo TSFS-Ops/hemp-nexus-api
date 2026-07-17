@@ -12,6 +12,7 @@ import { CWStatusBadge, AdapterModeBanner } from "@/components/compliance-workbe
 import { CASE_TYPE_LABELS, listCases, type CaseSummary } from "@/lib/compliance-workbench";
 import { relativeFromNow } from "@/lib/funder-workspace/ui/labels";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { DeskLayout } from "@/components/desk/DeskLayout";
 
 export default function DeskComplianceCases() {
   const [cases, setCases] = useState<CaseSummary[] | null>(null);
