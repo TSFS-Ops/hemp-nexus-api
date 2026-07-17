@@ -253,7 +253,8 @@ export default function DeskComplianceCaseDetail() {
           </Card>
         </section>
       )}
-    </div>
+      </div>
+    </DeskLayout>
   );
 }
 
