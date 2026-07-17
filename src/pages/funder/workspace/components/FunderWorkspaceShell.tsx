@@ -5,7 +5,6 @@
  * not a funder-org member.
  */
 import { ReactNode, useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import {
@@ -20,18 +19,10 @@ interface Props {
   children: (ctx: CurrentFunderContext) => ReactNode;
 }
 
-const NAV: Array<{ href: string; label: string }> = [
-  { href: "/funder/workspace", label: "Dashboard" },
-  { href: "/funder/workspace/deals", label: "Deals" },
-  { href: "/funder/workspace/activity", label: "Activity" },
-  { href: "/funder/workspace/profile", label: "Profile" },
-];
-
 export function FunderWorkspaceShell({ title, description, children }: Props) {
   const [ctx, setCtx] = useState<CurrentFunderContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const location = useLocation();
 
   useEffect(() => {
     let alive = true;
@@ -63,55 +54,33 @@ export function FunderWorkspaceShell({ title, description, children }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-testid="fw-funder-shell">
-      <header className="border-b bg-card">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">
-              Funder workspace
-            </div>
-            <div className="text-lg font-semibold">{ctx.organisation.name}</div>
+    <div className="max-w-6xl mx-auto p-6 space-y-4" data-testid="fw-funder-shell">
+      <div className="rounded-md border border-border bg-card px-4 py-3 flex items-center justify-between">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Funder organisation
           </div>
-          <div className="text-xs text-muted-foreground text-right">
-            <div>{ctx.email}</div>
-            <div>{funderRoleLabel(ctx.role)}</div>
+          <div className="text-sm font-semibold text-foreground truncate">
+            {ctx.organisation.name}
           </div>
         </div>
-        <nav className="max-w-6xl mx-auto px-6 flex gap-4 text-sm">
-          {NAV.map((n) => {
-            const active = location.pathname === n.href ||
-              (n.href !== "/funder/workspace" && location.pathname.startsWith(n.href));
-            return (
-              <Link
-                key={n.href}
-                to={n.href}
-                className={
-                  "py-3 border-b-2 " +
-                  (active
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground")
-                }
-              >
-                {n.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </header>
-      <main className="max-w-6xl mx-auto p-6 space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{title}</h1>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
-          )}
+        <div className="text-xs text-muted-foreground text-right shrink-0">
+          <div className="truncate max-w-[220px]">{ctx.email}</div>
+          <div>{funderRoleLabel(ctx.role)}</div>
         </div>
-        <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-          Released for authorised funder review only. Information shown here has
-          been approved for release by Izenzo. Decisions recorded elsewhere do not
-          affect other funders.
-        </div>
-        {children(ctx)}
-      </main>
+      </div>
+      <div>
+        <h1 className="text-2xl font-semibold">{title}</h1>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        )}
+      </div>
+      <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+        Released for authorised funder review only. Information shown here has
+        been approved for release by Izenzo. Decisions recorded elsewhere do not
+        affect other funders.
+      </div>
+      {children(ctx)}
     </div>
   );
 }
