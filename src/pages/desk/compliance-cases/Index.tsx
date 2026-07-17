@@ -12,6 +12,7 @@ import { CWStatusBadge, AdapterModeBanner } from "@/components/compliance-workbe
 import { CASE_TYPE_LABELS, listCases, type CaseSummary } from "@/lib/compliance-workbench";
 import { relativeFromNow } from "@/lib/funder-workspace/ui/labels";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { DeskLayout } from "@/components/desk/DeskLayout";
 
 export default function DeskComplianceCases() {
   const [cases, setCases] = useState<CaseSummary[] | null>(null);
@@ -26,7 +27,8 @@ export default function DeskComplianceCases() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
+    <DeskLayout>
+      <div className="mx-auto max-w-4xl space-y-4">
       <header className="flex items-center gap-2">
         <ShieldCheck className="h-5 w-5 text-primary" />
         <div>
@@ -86,6 +88,7 @@ export default function DeskComplianceCases() {
           ))}
         </ul>
       )}
-    </div>
+      </div>
+    </DeskLayout>
   );
 }
