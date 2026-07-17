@@ -137,7 +137,7 @@ export function AdminShell({ children }: { children?: ReactNode }) {
             <div className="flex h-12 items-center gap-3 px-3 sm:px-4">
               <SidebarTrigger />
               <div className="hidden md:flex flex-1 min-w-0">
-                <ShellBreadcrumb pathname={pathname} />
+                <ShellBreadcrumb nav={ADMIN_SHELL_NAV} pathname={pathname} />
               </div>
               <div className="md:hidden text-sm font-semibold text-foreground truncate flex-1">
                 Izenzo · Admin
