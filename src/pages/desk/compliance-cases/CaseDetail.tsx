@@ -26,6 +26,7 @@ import {
 } from "@/lib/compliance-workbench";
 import { formatDate, formatDateTime } from "@/lib/funder-workspace/ui/labels";
 import { AlertTriangle, ArrowLeft, Upload, Info, MessageSquare } from "lucide-react";
+import { DeskLayout } from "@/components/desk/DeskLayout";
 
 export default function DeskComplianceCaseDetail() {
   const { reference = "" } = useParams();
