@@ -88,6 +88,7 @@ export default function DeskComplianceCases() {
           ))}
         </ul>
       )}
-    </div>
+      </div>
+    </DeskLayout>
   );
 }
