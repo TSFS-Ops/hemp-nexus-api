@@ -176,6 +176,25 @@ const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notif
 // P-5 Batch 1 — Governance, Compliance & Readiness admin surface
 const P5GovernanceCasesDashboard = lazy(() => import("@/pages/admin/p5-governance/CasesDashboard"));
 const P5GovernanceCaseDetail = lazy(() => import("@/pages/admin/p5-governance/CaseDetail"));
+// Enterprise Compliance Case Management Workbench (UI slice)
+const ComplianceWorkbenchShell = lazy(() =>
+  import("@/components/compliance-workbench").then((m) => ({ default: m.ComplianceWorkbenchShell })),
+);
+const CWOverview = lazy(() => import("@/pages/hq/compliance/Overview"));
+const CWQueue = lazy(() => import("@/pages/hq/compliance/CaseQueue"));
+const CWMyCases = lazy(() => import("@/pages/hq/compliance/MyCases"));
+const CWUnassigned = lazy(() => import("@/pages/hq/compliance/Unassigned"));
+const CWApprovals = lazy(() => import("@/pages/hq/compliance/PendingApprovals"));
+const CWHolds = lazy(() => import("@/pages/hq/compliance/ActiveHolds"));
+const CWRfis = lazy(() => import("@/pages/hq/compliance/OverdueRfis"));
+const CWProviderExceptions = lazy(() => import("@/pages/hq/compliance/ProviderExceptions"));
+const CWPeriodic = lazy(() => import("@/pages/hq/compliance/PeriodicReviews"));
+const CWAppeals = lazy(() => import("@/pages/hq/compliance/Appeals"));
+const CWReports = lazy(() => import("@/pages/hq/compliance/Reports"));
+const CWCaseDetail = lazy(() => import("@/pages/hq/compliance/CaseDetail"));
+const DeskComplianceCases = lazy(() => import("@/pages/desk/compliance-cases/Index"));
+const DeskComplianceCaseDetail = lazy(() => import("@/pages/desk/compliance-cases/CaseDetail"));
+const FunderComplianceSummary = lazy(() => import("@/pages/funder/compliance-summary/Index"));
 // P-5 Batch 2 — KYC / KYB Evidence & Artefacts admin/operator surfaces (Stage 4)
 const P5Batch2EvidenceDashboard = lazy(() => import("@/pages/admin/p5-batch2/EvidenceDashboard"));
 const P5Batch2RecordDetail = lazy(() => import("@/pages/admin/p5-batch2/RecordDetail"));
@@ -431,6 +450,41 @@ function App() {
                   {/* P-5 Batch 1 — Governance, Compliance & Readiness (admin/internal) */}
                   <Route path="/admin/p5-governance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCasesDashboard /></RequireAuth>} />
                   <Route path="/admin/p5-governance/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCaseDetail /></RequireAuth>} />
+
+                  {/* Enterprise Compliance Case Management Workbench (UI slice) */}
+                  <Route
+                    path="/hq/compliance"
+                    element={
+                      <RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk">
+                        <ComplianceWorkbenchShell />
+                      </RequireAuth>
+                    }
+                  >
+                    <Route index element={<CWOverview />} />
+                    <Route path="queue" element={<CWQueue />} />
+                    <Route path="my" element={<CWMyCases />} />
+                    <Route path="unassigned" element={<CWUnassigned />} />
+                    <Route path="approvals" element={<CWApprovals />} />
+                    <Route path="holds" element={<CWHolds />} />
+                    <Route path="rfis" element={<CWRfis />} />
+                    <Route path="provider-exceptions" element={<CWProviderExceptions />} />
+                    <Route path="periodic-reviews" element={<CWPeriodic />} />
+                    <Route path="appeals" element={<CWAppeals />} />
+                    <Route path="reports" element={<CWReports />} />
+                    <Route path="cases/:reference" element={<CWCaseDetail />} />
+                  </Route>
+                  <Route
+                    path="/desk/compliance-cases"
+                    element={<RequireAuth><DeskComplianceCases /></RequireAuth>}
+                  />
+                  <Route
+                    path="/desk/compliance-cases/:reference"
+                    element={<RequireAuth><DeskComplianceCaseDetail /></RequireAuth>}
+                  />
+                  <Route
+                    path="/funder/compliance-summary"
+                    element={<RequireAuth><FunderComplianceSummary /></RequireAuth>}
+                  />
 
                   {/* P-5 Batch 2 — Stage 4: Admin/operator Evidence & Artefacts surfaces */}
                   <Route path="/admin/p5-batch2" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2EvidenceDashboard /></RequireAuth>} />
