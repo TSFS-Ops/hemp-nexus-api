@@ -45,20 +45,24 @@ export default function DeskComplianceCaseDetail() {
   }, [reference]);
 
   if (error) return (
-    <div className="mx-auto max-w-4xl p-6" role="alert">
-      <Card className="p-6">
-        <AlertTriangle className="mb-2 h-5 w-5 text-destructive" />
-        <div className="font-medium">Cannot load your case</div>
-        <div className="text-sm text-muted-foreground">{error}</div>
-      </Card>
-    </div>
+    <DeskLayout>
+      <div className="mx-auto max-w-4xl" role="alert">
+        <Card className="p-6">
+          <AlertTriangle className="mb-2 h-5 w-5 text-destructive" />
+          <div className="font-medium">Cannot load your case</div>
+          <div className="text-sm text-muted-foreground">{error}</div>
+        </Card>
+      </div>
+    </DeskLayout>
   );
 
   if (!d) return (
-    <div className="mx-auto max-w-4xl space-y-3 p-6">
-      <Skeleton className="h-24" />
-      <Skeleton className="h-48" />
-    </div>
+    <DeskLayout>
+      <div className="mx-auto max-w-4xl space-y-3">
+        <Skeleton className="h-24" />
+        <Skeleton className="h-48" />
+      </div>
+    </DeskLayout>
   );
 
   const outstandingEvidence = d.evidence.filter(
