@@ -14,6 +14,7 @@
  * Wrapped at the route table in App.tsx around every /admin/* and /hq/*
  * route so navigation between them feels like one product, not many.
  */
+import { ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
