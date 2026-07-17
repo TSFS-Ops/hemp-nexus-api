@@ -33,6 +33,7 @@ const settingsNavItems = [
   { path: ROUTES.DASHBOARD_SETTINGS, title: "Settings", icon: Settings },
   { path: ROUTES.DASHBOARD_ACCOUNT, title: "Organisation", icon: Building2 },
   { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
+  { path: "/desk/compliance-cases", title: "Compliance Cases", icon: ShieldCheck },
   { path: ROUTES.BILLING, title: "Billing & Credits", icon: Coins },
   { path: "/support", title: "Support", icon: LifeBuoy },
 ];
@@ -128,6 +129,14 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
                     <Link to={ROUTES.ADMIN}>
                       <Settings className="h-4 w-4" />
                       <span>Admin</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/hq/compliance")} className="w-full px-2 py-1.5 text-sm">
+                    <Link to="/hq/compliance">
+                      <ShieldCheck className="h-4 w-4" />
+                      <span>Compliance Workbench</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
