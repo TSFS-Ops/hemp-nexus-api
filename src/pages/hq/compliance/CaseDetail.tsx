@@ -11,9 +11,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CaseHeader, CWStatusBadge } from "@/components/compliance-workbench";
+import { CaseHeader, CWStatusBadge, CaseDetailSkeleton, EvidenceSkeleton, InlineEmpty, EmptyState } from "@/components/compliance-workbench";
 import {
   getCaseDetail,
   type CaseDetail as CaseDetailT,
@@ -76,13 +75,7 @@ export default function ComplianceCaseDetail() {
   }
 
   if (!detail) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-28" />
-        <Skeleton className="h-8 w-96" />
-        <Skeleton className="h-72" />
-      </div>
-    );
+    return <CaseDetailSkeleton />;
   }
 
   const d = detail;
@@ -285,7 +278,11 @@ function EvidenceTab({ d }: { d: CaseDetailT }) {
         </Card>
       ))}
       {d.evidence.length === 0 && (
-        <Card className="p-6 text-center text-sm text-muted-foreground">No evidence requirements yet.</Card>
+        <EmptyState
+          tone="success"
+          title="No evidence requirements yet"
+          description="As requirements are opened for this case, they will appear here with attempt counts, versions and reviewer notes."
+        />
       )}
     </div>
   );
