@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { OverviewSkeleton } from "@/components/compliance-workbench";
 import { getOverviewMetrics, RISK_BANDS, RISK_BAND_LABELS, CASE_STATUS_LABELS, CASE_TYPE_LABELS, type OverviewMetrics, type CaseStatus, type CaseType } from "@/lib/compliance-workbench";
 import { AlertTriangle, Clock, ShieldAlert, Users } from "lucide-react";
 
@@ -32,13 +32,7 @@ export default function ComplianceOverview() {
     );
   }
   if (!metrics) {
-    return (
-      <div className="grid gap-3 md:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-24" />
-        ))}
-      </div>
-    );
+    return <OverviewSkeleton />;
   }
 
   return (
