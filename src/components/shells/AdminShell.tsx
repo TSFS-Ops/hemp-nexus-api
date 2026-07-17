@@ -129,7 +129,7 @@ function AdminSidebar() {
   );
 }
 
-export function AdminShell() {
+export function AdminShell({ children }: { children?: ReactNode }) {
   const { pathname } = useLocation();
   const { user } = useAuth();
 
