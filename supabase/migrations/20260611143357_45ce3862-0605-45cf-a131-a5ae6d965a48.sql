@@ -4,10 +4,10 @@
 -- permissively with this one. Org-scoped access is the secure default
 -- (RLS continues to block cross-org reads).
 CREATE POLICY "Users can select their org webhooks"
-  ON public.webhook_endpoints
-  FOR SELECT
-  TO authenticated
-  USING (org_id IN (SELECT profiles.org_id FROM public.profiles WHERE profiles.id = auth.uid()));
+ON public.webhook_endpoints
+FOR SELECT
+TO authenticated
+USING (org_id IN (SELECT profiles.org_id FROM public.profiles WHERE profiles.id = auth.uid()));
 
 -- Positive SELECT policy for the `user-exports` storage bucket.
 -- Files are laid out under `{auth.uid()}/...`, so we scope downloads to
@@ -15,22 +15,24 @@ CREATE POLICY "Users can select their org webhooks"
 -- coexists with the existing negative deny policy (PERMISSIVE policies
 -- are OR-combined; an authenticated user matching this rule is allowed,
 -- while anonymous and other-user requests remain blocked).
+DROP POLICY IF EXISTS "Users can download their own user-exports" ON storage.objects;
 CREATE POLICY "Users can download their own user-exports"
-  ON storage.objects
-  FOR SELECT
-  TO authenticated
-  USING (
-    bucket_id = 'user-exports'
-    AND auth.uid()::text = (storage.foldername(name))[1]
-  );
+ON storage.objects
+FOR SELECT
+TO authenticated
+USING (
+bucket_id = 'user-exports'
+AND auth.uid()::text = (storage.foldername(name))[1]
+);
 
 -- Positive SELECT policy for the `admin-exports` storage bucket — only
 -- platform admins may download. Relies on the canonical is_admin() helper.
+DROP POLICY IF EXISTS "Platform admins can download admin-exports" ON storage.objects;
 CREATE POLICY "Platform admins can download admin-exports"
-  ON storage.objects
-  FOR SELECT
-  TO authenticated
-  USING (
-    bucket_id = 'admin-exports'
-    AND public.is_admin(auth.uid())
-  );
+ON storage.objects
+FOR SELECT
+TO authenticated
+USING (
+bucket_id = 'admin-exports'
+AND public.is_admin(auth.uid())
+);
