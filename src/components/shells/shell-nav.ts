@@ -170,7 +170,5 @@ export const FUNDER_SHELL_NAV: ShellNavGroup[] = [
   },
 ];
 
-// Local re-export: lucide's Handshake export naming varies across versions,
-// so we alias to a stable name and fall back gracefully.
-import { Handshake } from "lucide-react";
 const Handshake_: LucideIcon = Handshake ?? Workflow;
+
