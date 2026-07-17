@@ -330,6 +330,7 @@ function App() {
               <AuthRedirectNoticeBanner />
               <RouteErrorBoundary>
                 <Suspense fallback={<FullPageLoader />}>
+                <PersonaShellRouter>
                 <Routes>
                   <Route path={ROUTES.ROOT} element={<RootElement />} />
                   {/* Canonical redirect: /landing → / */}
