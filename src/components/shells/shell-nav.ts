@@ -170,5 +170,5 @@ export const FUNDER_SHELL_NAV: ShellNavGroup[] = [
   },
 ];
 
-const Handshake: LucideIcon = Handshake ?? Workflow;
+
 
