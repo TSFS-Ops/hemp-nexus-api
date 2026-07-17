@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { CaseQueueTable } from "@/components/compliance-workbench";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CaseQueueTable, QueueSkeleton, EmptyState } from "@/components/compliance-workbench";
 import { Card } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Inbox } from "lucide-react";
 import { listCases, type CaseSummary, type QueueFilters } from "@/lib/compliance-workbench";
 
 interface Props {
@@ -49,11 +48,13 @@ export function QueuePage({ title, description, initialFilters, emptyLabel, show
           </div>
         </Card>
       ) : !cases ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10" />
-          ))}
-        </div>
+        <QueueSkeleton />
+      ) : cases.length === 0 ? (
+        <EmptyState
+          icon={<Inbox className="h-6 w-6 text-muted-foreground" />}
+          title={emptyLabel ?? "No cases match this view"}
+          description="When new cases arrive or filters change, they will appear here instantly."
+        />
       ) : (
         <CaseQueueTable
           cases={cases}

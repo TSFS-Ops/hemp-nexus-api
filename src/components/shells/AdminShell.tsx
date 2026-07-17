@@ -38,31 +38,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ADMIN_SHELL_NAV, type ShellNavItem } from "./shell-nav";
+import { ShellBreadcrumb } from "./ShellBreadcrumb";
 
 function isItemActive(pathname: string, item: ShellNavItem): boolean {
   if (item.match === "exact") return pathname === item.to || pathname === `${item.to}/`;
   return pathname === item.to || pathname.startsWith(`${item.to}/`) || pathname.startsWith(`${item.to}?`);
-}
-
-/** Breadcrumb derived from the active nav item — one label, no synthetic
- *  path splitting, so it never lies about hierarchy. */
-function ShellBreadcrumb({ pathname }: { pathname: string }) {
-  for (const group of ADMIN_SHELL_NAV) {
-    for (const item of group.items) {
-      if (isItemActive(pathname, item)) {
-        return (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
-            <span className="uppercase tracking-wider text-[10px] font-medium">
-              {group.label}
-            </span>
-            <span aria-hidden>·</span>
-            <span className="truncate text-foreground/80">{item.label}</span>
-          </div>
-        );
-      }
-    }
-  }
-  return null;
 }
 
 function AdminSidebar() {
@@ -157,7 +137,7 @@ export function AdminShell({ children }: { children?: ReactNode }) {
             <div className="flex h-12 items-center gap-3 px-3 sm:px-4">
               <SidebarTrigger />
               <div className="hidden md:flex flex-1 min-w-0">
-                <ShellBreadcrumb pathname={pathname} />
+                <ShellBreadcrumb nav={ADMIN_SHELL_NAV} pathname={pathname} />
               </div>
               <div className="md:hidden text-sm font-semibold text-foreground truncate flex-1">
                 Izenzo · Admin

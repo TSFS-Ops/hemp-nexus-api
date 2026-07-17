@@ -7,11 +7,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { CWStatusBadge, AdapterModeBanner } from "@/components/compliance-workbench";
+import { CWStatusBadge, AdapterModeBanner, EmptyState, EvidenceSkeleton } from "@/components/compliance-workbench";
 import { CASE_TYPE_LABELS, listCases, type CaseSummary } from "@/lib/compliance-workbench";
 import { relativeFromNow } from "@/lib/funder-workspace/ui/labels";
-import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Inbox, ShieldCheck } from "lucide-react";
 import { DeskLayout } from "@/components/desk/DeskLayout";
 
 export default function DeskComplianceCases() {
@@ -52,13 +51,14 @@ export default function DeskComplianceCases() {
           </div>
         </Card>
       ) : !cases ? (
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
-        </div>
+        <EvidenceSkeleton items={3} />
       ) : cases.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
-          There are no open compliance reviews for your organisation.
-        </Card>
+        <EmptyState
+          icon={<Inbox className="h-6 w-6 text-muted-foreground" />}
+          tone="success"
+          title="No open compliance reviews"
+          description="You are all clear. When we need anything from you it will appear here."
+        />
       ) : (
         <ul className="space-y-2">
           {cases.map((c) => (
