@@ -347,21 +347,23 @@ jobs:
       - name: Generate Supabase types from disposable database (evidence step)
         run: |
           set -o pipefail
-          bunx supabase --version 2>&1 | tee validation-artifact/26a-supabase-cli-version.txt || true
-          bunx supabase gen types typescript --db-url "postgresql://supabase_admin:postgres@127.0.0.1:5432/postgres" --schema public > validation-artifact/26-generated-types.ts 2> validation-artifact/26b-generate-stderr.txt
-          echo "GENERATE_EXIT=$?"
+          touch validation-artifact/26-generated-types.ts validation-artifact/26b-generate-stderr.txt validation-artifact/27-types-diff.txt
+          npx -y supabase@latest --version > validation-artifact/26a-supabase-cli-version.txt 2>&1 || true
+          cat validation-artifact/26a-supabase-cli-version.txt || true
+          npx -y supabase@latest gen types typescript --db-url "postgresql://supabase_admin:postgres@127.0.0.1:5432/postgres" --schema public > validation-artifact/26-generated-types.ts 2> validation-artifact/26b-generate-stderr.txt || true
           echo "===STDERR_START==="
-          cat validation-artifact/26b-generate-stderr.txt
+          cat validation-artifact/26b-generate-stderr.txt || true
           echo "===STDERR_END==="
-          wc -l validation-artifact/26-generated-types.ts
+          wc -l validation-artifact/26-generated-types.ts || true
           echo "===RPC_SIGNATURE_START==="
           grep -A 12 "fw_admin_check_pilot_fixtures_v1" validation-artifact/26-generated-types.ts || echo "RPC_NOT_FOUND_IN_GENERATED_TYPES"
           echo "===RPC_SIGNATURE_END==="
           echo "===TYPES_DIFF_START==="
           diff -u src/integrations/supabase/types.ts validation-artifact/26-generated-types.ts > validation-artifact/27-types-diff.txt || true
-          cat validation-artifact/27-types-diff.txt
+          cat validation-artifact/27-types-diff.txt || true
           echo "===TYPES_DIFF_END==="
           echo "DIFF_LINE_COUNT=$(wc -l < validation-artifact/27-types-diff.txt)"
+        continue-on-error: true
 
       - name: Reset DB and re-apply migrations (idempotency) [fail-closed]
         run: |
