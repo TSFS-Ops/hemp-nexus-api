@@ -88,7 +88,6 @@ describe("Funder Workspace Batch 3 — funder client scope", () => {
     expect(FUNDER_CLIENT).not.toMatch(/fw_funder_(create|edit|delete|withdraw|close|add|record)_/);
   });
 
-
   it("never imports admin-client (no admin mutations from funder surface)", () => {
     expect(FUNDER_CLIENT).not.toMatch(/from\s+["']\.\/admin-client["']/);
     expect(FUNDER_CLIENT).not.toMatch(/fw_admin_/);
@@ -202,9 +201,33 @@ describe("Funder Workspace Batch 3 — release detail hides access", () => {
       join(ROOT, "src/pages/funder/workspace/DealDetail.tsx"),
       "utf8",
     );
-            expect(body).not.toMatch(/PDF generation comes in the next build batch/);
-        expect(body).toMatch(/The sealed evidence pack contains the authoritative snapshot/);
-      });
+    expect(body).not.toMatch(/PDF generation comes in the next build batch/);
+    expect(body).toMatch(/The sealed evidence pack contains the authoritative snapshot/);
+  });
+
+  it("does not display the raw evidence pack UUID to funders", () => {
+    const body = readFileSync(
+      join(ROOT, "src/pages/funder/workspace/DealDetail.tsx"),
+      "utf8",
+    );
+    // The compiled-pack version number may be shown; the underlying
+    // evidence_pack_id UUID and raw file hash must never be rendered.
+    expect(body).not.toMatch(/evidence_pack_id/);
+    expect(body).not.toMatch(/file_sha256\s*\?\s*"present"/);
+  });
+
+  it("continues to use the shared funder-workspace UI kit", () => {
+    const body = readFileSync(
+      join(ROOT, "src/pages/funder/workspace/DealDetail.tsx"),
+      "utf8",
+    );
+    expect(body).toMatch(/from "@\/lib\/funder-workspace\/ui"/);
+    expect(body).toMatch(/\bStatusBadge\b/);
+    expect(body).toMatch(/\bSectionHeading\b/);
+    expect(body).toMatch(/\bExpiryIndicator\b/);
+    expect(body).toMatch(/\bEmptyState\b/);
+    expect(body).toMatch(/\bLoadingState\b/);
+  });
 });
 
 describe("Funder Workspace Batch 3 — role label mapping", () => {
