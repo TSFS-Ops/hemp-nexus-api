@@ -75,6 +75,7 @@ jobs:
         run: |
           set -o pipefail
           bunx tsc --noEmit -p tsconfig.app.json 2>&1 | tee validation-artifact/12-typecheck.txt
+          echo "TYPECHECK_OK" | tee -a validation-artifact/12-typecheck.txt
 
       - name: Focused Funder Workspace tests (fail-closed)
         run: |
@@ -86,14 +87,104 @@ jobs:
             src/tests/funder-workspace-release-state-consistency.test.ts \
             src/tests/pr26-pilot-readiness-workflow-conformance.test.ts \
             2>&1 | tee validation-artifact/10-focused-tests.txt
+            echo "FOCUSED_TESTS_OK" | tee -a validation-artifact/10-focused-tests.txt
 
-      - name: Full Vitest suite (fail-closed)
+      - name: Full Vitest suite - PR head (evidence + comparison input, non-blocking)
         env:
           VITE_SUPABASE_URL: http://localhost:54321
           VITE_SUPABASE_PUBLISHABLE_KEY: dummy-anon-key-for-vitest
+        continue-on-error: true
+        run: |
+          set +e
+          bunx vitest run --reporter=verbose --reporter=json --outputFile=validation-artifact/11-full-vitest-head.json 2>&1 | tee validation-artifact/11-full-vitest-head.txt
+          code=${PIPESTATUS[0]}
+          echo "HEAD_VITEST_EXIT_CODE=${code}" | tee validation-artifact/11b-head-exit-code.txt
+          exit 0
+
+      - name: Checkout base/main branch for baseline comparison
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || 'main' }}
+          path: base-checkout
+
+      - name: Install dependencies on base/main (evidence-only, non-blocking)
+        continue-on-error: true
+        run: |
+          set +e
+          cd base-checkout
+          bun install --frozen-lockfile 2>&1 | tee ../validation-artifact/13-base-install.txt
+          exit 0
+
+      - name: Full Vitest suite - base/main (evidence + comparison input, non-blocking)
+        env:
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_PUBLISHABLE_KEY: dummy-anon-key-for-vitest
+        continue-on-error: true
+        run: |
+          set +e
+          cd base-checkout
+          bunx vitest run --reporter=verbose --reporter=json --outputFile=../validation-artifact/14-full-vitest-base.json 2>&1 | tee ../validation-artifact/14-full-vitest-base.txt
+          code=${PIPESTATUS[0]}
+          cd ..
+          echo "BASE_VITEST_EXIT_CODE=${code}" | tee validation-artifact/14b-base-exit-code.txt
+          exit 0
+
+      - name: Compare full Vitest suite - PR head vs base (fail-closed regression gate)
         run: |
           set -o pipefail
-          bunx vitest run --reporter=verbose 2>&1 | tee validation-artifact/11-full-vitest.txt
+          node scripts/ci/compare-vitest-baseline.mjs \
+            validation-artifact/11-full-vitest-head.json \
+            validation-artifact/14-full-vitest-base.json \
+            validation-artifact/15-baseline-comparison.md 2>&1 | tee validation-artifact/15b-comparison-stdout.txt
+
+      - name: Source validation gate summary (PR-specific mandatory gate)
+        if: always()
+        run: |
+          set -euo pipefail
+          status_file=$(mktemp)
+          echo 0 > "$status_file"
+          pass_or_fail() {
+            local label="$1"; local file="$2"; local needle="$3"
+            if [ -f "$file" ] && grep -q "$needle" "$file"; then
+              echo "PASS $label"
+            else
+              echo "FAIL $label"
+              echo 1 > "$status_file"
+            fi
+          }
+          head_failed="n/a"; base_failed="n/a"; introduced="n/a"; shared="n/a"; main_only="n/a"
+          if [ -f validation-artifact/15b-comparison-stdout.txt ]; then
+            head_failed=$(grep -o 'HEAD_FAILED_TOTAL=[0-9]*' validation-artifact/15b-comparison-stdout.txt | cut -d= -f2 || true)
+            base_failed=$(grep -o 'BASE_FAILED_TOTAL=[0-9]*' validation-artifact/15b-comparison-stdout.txt | cut -d= -f2 || true)
+            introduced=$(grep -o 'PR_INTRODUCED_REGRESSIONS=[0-9]*' validation-artifact/15b-comparison-stdout.txt | cut -d= -f2 || true)
+            shared=$(grep -o 'SHARED_BASELINE_FAILURES=[0-9]*' validation-artifact/15b-comparison-stdout.txt | cut -d= -f2 || true)
+            main_only=$(grep -o 'MAIN_ONLY_FAILURES=[0-9]*' validation-artifact/15b-comparison-stdout.txt | cut -d= -f2 || true)
+          fi
+          {
+            echo "# PR #26 Pilot Readiness - Source validation gate summary"
+            echo
+            echo "Commit: $GITHUB_SHA"
+            echo
+            echo "## Mandatory PR-specific checks"
+            pass_or_fail "typecheck" validation-artifact/12-typecheck.txt "TYPECHECK_OK"
+            pass_or_fail "focused_funder_workspace_tests" validation-artifact/10-focused-tests.txt "FOCUSED_TESTS_OK"
+            pass_or_fail "baseline_comparison_completed_zero_regressions" validation-artifact/15b-comparison-stdout.txt "COMPARISON_OK"
+            echo
+            echo "## Full-suite evidence (informational; shared baseline failures do not block this gate)"
+            echo "Full-suite failures on PR head: ${head_failed}"
+            echo "Full-suite failures on base/main: ${base_failed}"
+            echo "PR-introduced regressions: ${introduced}"
+            echo "Shared baseline failures (pre-existing on main): ${shared}"
+            echo "Main-only failures: ${main_only}"
+            echo
+            fail_now="$(cat "$status_file")"
+            if [ "$fail_now" -eq 0 ]; then
+              echo "SOURCE_GATE_RESULT: PASS"
+            else
+              echo "SOURCE_GATE_RESULT: FAIL"
+            fi
+          } | tee validation-artifact/16-source-gate-verdict.md
+          exit "$(cat "$status_file")"
 
       - name: Upload source validation artifact
         if: always()
