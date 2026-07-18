@@ -93,7 +93,6 @@ jobs:
         env:
           VITE_SUPABASE_URL: http://localhost:54321
           VITE_SUPABASE_PUBLISHABLE_KEY: dummy-anon-key-for-vitest
-        continue-on-error: true
         run: |
           set +e
           bunx vitest run --reporter=verbose --reporter=json --outputFile=validation-artifact/11-full-vitest-head.json 2>&1 | tee validation-artifact/11-full-vitest-head.txt
@@ -108,7 +107,6 @@ jobs:
           path: base-checkout
 
       - name: Install dependencies on base/main (evidence-only, non-blocking)
-        continue-on-error: true
         run: |
           set +e
           cd base-checkout
@@ -119,7 +117,6 @@ jobs:
         env:
           VITE_SUPABASE_URL: http://localhost:54321
           VITE_SUPABASE_PUBLISHABLE_KEY: dummy-anon-key-for-vitest
-        continue-on-error: true
         run: |
           set +e
           cd base-checkout
