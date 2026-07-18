@@ -25470,6 +25470,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      fw_admin_check_pilot_fixtures_v1: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: string
+          label: string
+          status: string
+        }[]
+      }
       fw_admin_funder_pack_content_v1: {
         Args: { p_release_id: string }
         Returns: Json
