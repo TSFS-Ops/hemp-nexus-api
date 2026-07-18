@@ -266,37 +266,41 @@ Retain the `evidence/pr-26-validation/` screenshots and the run log.
 
 **PR #26 must remain a draft and the manual pilot must remain paused until both the CI workflow reports green and the human sections return a fully ticked checklist.**
 
-## CI validation record — read-only baseline comparison + typecheck fix (2026-07-17)
+## CI validation record - fail-closed base-comparison gate (2026-07-18)
 
-This section records the results of a read-only, tightly-scoped CI validation pass performed after the migration idempotency hardening above reached a fully green Disposable DB job. It exists to give a durable, auditable answer to one question: **does PR #26 introduce any new test regressions relative to `main`?**
+This section supersedes the prior read-only baseline-comparison record that previously appeared here, which used stale SHAs from an earlier, separately-triggered manual pass and a comparison mechanism not yet proven to match failures correctly across checkouts. The workflow has since been restructured so the base comparison is fail-closed and runs automatically as part of the same mandatory PR-specific gate on every run, rather than as a separate manual read-only pass.
 
-**Heads tested**
+**Mechanism**
 
-- PR head tested: `848814e` (full-suite baseline comparison), workflow then updated at `8fb92a9` (typecheck-ordering fix; re-validation run recorded separately once complete).
-- Base SHA tested: `37e7826` (`main`, HEAD at time of test).
-- Both were run via `workflow_dispatch` on `.github/workflows/pr26-pilot-readiness-validation.yml`, selecting each branch, so the workflow file, Bun setup, environment variables, and Vitest invocation are identical and native to that branch.
+The `.github/workflows/pr26-pilot-readiness-validation.yml` `Source - focused tests - full Vitest - typecheck` job now:
 
-**Full-suite comparison**
+- runs `Typecheck (fail-closed)` and `Focused Funder Workspace tests (fail-closed)` first, each writing an `..._OK` marker consumed by the final gate;
+- runs the full Vitest suite once against the PR head (non-blocking, evidence + comparison input), writing a JSON reporter file;
+- checks out `base-checkout` at the merge base / `main` and runs the full Vitest suite again under identical conditions (non-blocking, evidence + comparison input), writing a second JSON reporter file;
+- runs `scripts/ci/compare-vitest-baseline.mjs` against both JSON reports. The script normalizes each Vitest-reported file path to its repo-relative form (so the nested `base-checkout/` checkout does not defeat the identifier match), classifies every failing test as introduced / shared-baseline / main-only, writes a markdown summary to the uploaded artifact, and exits non-zero (fail-closed) if any PR-introduced regression is found, or if the comparison itself cannot be completed;
+- a final `Source validation gate summary` step (`if: always()`) reads the `TYPECHECK_OK`, `FOCUSED_TESTS_OK`, and `COMPARISON_OK` markers and fails the job unless all three are present.
 
-| | PR (`848814e`) | base / `main` (`37e7826`) |
+**Final branch SHA validated: `6a6ddd7b021643d1478a705a8e16c965f961061a`.**
+
+**Full-suite comparison (workflow run #44, both branches tested under this commit's workflow in the same job execution)**
+
+| | PR head (`6a6ddd7`) | base / `main` |
 |---|---|---|
-| Disposable DB (migrations/idempotency/fixtures/isolation) | green | green |
-| Focused Funder Workspace suite | green | green |
-| Full Vitest suite | 35 tests failed / 20 files | 60 tests failed / 22 files |
-| Typecheck | not executing (see below) | not executing (see below) |
+| Full-suite failures | 35 | 60 |
 
-- Common to both branches (pre-existing baseline failures, same error signature): **35**.
-- PR-introduced regressions (pass on `main`, fail on PR branch): **0**.
-- Main-only failures, i.e. cases where the PR branch is healthier than `main` (fail on `main`, pass on PR branch): **25**, across `funder-workspace-batch3-funder-ui.test.ts` (1 — expected, this PR updated that assertion) and `phase-1a-support-behavioural.test.ts` (24 — unrelated to this PR's scope; not further diagnosed here).
+- PR-introduced regressions: **0**.
+- Shared baseline failures (pre-existing on both branches): **35**, including `funder-workspace-batch2-routes.test.ts`, which remains failing on both the PR branch and `main`. This is a pre-existing baseline failure, not introduced by this PR, and is intentionally **not** fixed here (baseline failures are compared against `main` and left to a separate workstream, per the established decision framework). The focused Funder Workspace suite used for the mandatory gate below is green; the full, unfiltered repository suite additionally includes this one shared funder route test failure, so the entire funder-workspace test surface should not be described as clean.
+- Main-only failures (fail on `main`, pass on PR branch): **25**.
 
-**Conclusion: PR #26 introduces zero test regressions relative to `main`.** The 35 shared failures are pre-existing repository baseline debt (PayFast, registry, notifications, audit, support-ticket and public-API areas) and are intentionally **not** fixed inside this PR; they require a separate workstream.
+**Mandatory PR-specific gate result: PASS**
 
-**Typecheck defect found and fixed**
+- `PASS typecheck`
+- `PASS focused_funder_workspace_tests`
+- `PASS baseline_comparison_completed_zero_regressions`
+- `SOURCE_GATE_RESULT: PASS`
 
-The workflow already defined a `Typecheck (fail-closed)` step (`bunx tsgo --noEmit -p tsconfig.app.json`), but it was positioned after `Full Vitest suite (fail-closed)`. Because GitHub Actions skips later steps once a step fails, and the Full Vitest suite step has been failing (on the pre-existing baseline failures above), the Typecheck step was never reached in any run — it silently never executed, despite the job being titled "...- typecheck". Fixed in commit `8fb92a9` by moving the existing step to run immediately after `Install dependencies`, before either test step, so it always executes; no `continue-on-error` is used, so any diagnostic still fails the step and the job. Its output continues to be written to `validation-artifact/12-typecheck.txt` and is included in the existing `pr26-source-validation` artifact upload.
+**Disposable database job: PASS** - first migration replay, second replay (idempotency), fixture + readiness RPC verification (all nine `check_key` rows Ready), and the isolation invariant all passed in the same run.
 
-Typecheck result from the first run against the corrected workflow: **to be populated once that run completes** (see the workflow run referenced in the PR conversation for the final head SHA and result).
-
-**Scope discipline:** no PayFast, registry, notifications, audit, support-ticket, or public-API code was modified during this comparison or the typecheck fix. Only `.github/workflows/pr26-pilot-readiness-validation.yml` (step reorder) and this documentation file were changed.
+**Authenticated browser validation remains outstanding** - this workflow validates source, migrations, and the disposable database only; it does not exercise the deployed Lovable/browser preview, which still requires a human session per the Human sections above.
 
 **PR #26 remains Draft** and has not been merged.
