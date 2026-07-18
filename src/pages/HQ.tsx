@@ -870,7 +870,7 @@ function HQLayout({ restrictedToFacilitation = false }: { restrictedToFacilitati
       replace: false
     });
   };
-  return <div className="min-h-screen bg-muted">
+  return <div className="min-h-full bg-muted">
       <CommandBar />
 
       {/* Tab rail, replaces the old SecondaryNav. Mirrors the Command Bar's

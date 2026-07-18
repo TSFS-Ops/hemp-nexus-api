@@ -65,18 +65,12 @@ import {
 
 function mapEnumToV1Role(role: string | null | undefined): V1Role | null {
   switch (role) {
-    case "funder_org_admin":
-      return "admin";
-    case "funder_approver":
-      return "approver";
-    case "funder_reviewer":
-      return "reviewer";
-    case "funder_viewer":
-      return "viewer";
-    case "external_adviser":
-      return "external_adviser";
-    default:
-      return null;
+    case "funder_org_admin": return "admin";
+    case "funder_approver": return "approver";
+    case "funder_reviewer": return "reviewer";
+    case "funder_viewer": return "viewer";
+    case "external_adviser": return "external_adviser";
+    default: return null;
   }
 }
 
@@ -318,7 +312,7 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
           {packs.length === 0 ? (
             <EmptyState
               title="No pack versions yet"
-              description="The sealed evidence pack contains the authoritative snapshot available for this release. Some web-page sections may show limited summary information."
+              description="A sealed pack will appear here once Izenzo generates it."
               testId="fw-pack-empty"
             />
           ) : (

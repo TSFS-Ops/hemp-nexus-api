@@ -17,6 +17,7 @@ import { P5ReadinessCard } from "@/components/p5-governance";
 import { fetchP5ReadinessSummary } from "@/lib/p5-governance/summary-client";
 import type { P5ReadinessSummary } from "@/lib/p5-governance/summary-types";
 import { useP5Permissions } from "@/hooks/useP5Permissions";
+import { LegacyBanner } from "@/lib/funder-workspace/ui";
 
 export default function FunderEvidencePack() {
   const [search] = useSearchParams();
@@ -60,6 +61,7 @@ export default function FunderEvidencePack() {
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-4" data-testid="funder-evidence-pack">
+      <LegacyBanner surface="P-5 governance evidence pack" />
       <BackButton />
       <header>
         <h1 className="text-2xl font-semibold">Evidence pack</h1>

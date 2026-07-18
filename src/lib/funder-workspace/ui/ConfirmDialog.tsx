@@ -84,7 +84,7 @@ export function ConfirmDialog({
             }}
             className={destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : undefined}
           >
-            {loading ? "Working..." : confirmLabel}
+            {loading ? "Working…" : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

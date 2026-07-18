@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LegacyBanner } from "@/lib/funder-workspace/ui";
 
 type Row = {
   id: string;
@@ -43,6 +44,7 @@ export default function P5Batch6FunderExceptions() {
 
   return (
     <div className="space-y-4 p-6">
+      <LegacyBanner surface="P-5 Batch 6 exceptions" />
       <h1 className="text-2xl font-semibold">Funder Exceptions</h1>
       <p className="text-sm text-muted-foreground">
         Read-only view of funder-relevant exceptions.

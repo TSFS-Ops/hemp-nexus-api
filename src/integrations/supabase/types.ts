@@ -21184,6 +21184,966 @@ export type Database = {
         }
         Relationships: []
       }
+      support_capabilities_grants: {
+        Row: {
+          capability: Database["public"]["Enums"]["support_capability"]
+          created_at: string
+          effective_from: string
+          effective_until: string | null
+          granted_by: string | null
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          capability: Database["public"]["Enums"]["support_capability"]
+          created_at?: string
+          effective_from?: string
+          effective_until?: string | null
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          capability?: Database["public"]["Enums"]["support_capability"]
+          created_at?: string
+          effective_from?: string
+          effective_until?: string | null
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_categories: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          is_restricted: boolean
+          key: string
+          label: string
+          restriction_class:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          is_restricted?: boolean
+          key: string
+          label: string
+          restriction_class?:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          is_restricted?: boolean
+          key?: string
+          label?: string
+          restriction_class?:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_category_routing: {
+        Row: {
+          category_key: string
+          created_at: string
+          id: string
+          is_active: boolean
+          subcategory_key: string | null
+          team_key: string
+        }
+        Insert: {
+          category_key: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          subcategory_key?: string | null
+          team_key: string
+        }
+        Update: {
+          category_key?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          subcategory_key?: string | null
+          team_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_category_routing_category_key_fkey"
+            columns: ["category_key"]
+            isOneToOne: false
+            referencedRelation: "support_categories"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "support_category_routing_subcategory_key_fkey"
+            columns: ["subcategory_key"]
+            isOneToOne: false
+            referencedRelation: "support_subcategories"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "support_category_routing_team_key_fkey"
+            columns: ["team_key"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      support_escalation_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          escalated_count: number
+          escalations: Json
+          finished_at: string | null
+          first_response_count: number
+          id: string
+          resolution_count: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          escalated_count?: number
+          escalations?: Json
+          finished_at?: string | null
+          first_response_count?: number
+          id?: string
+          resolution_count?: number
+          started_at?: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          escalated_count?: number
+          escalations?: Json
+          finished_at?: string | null
+          first_response_count?: number
+          id?: string
+          resolution_count?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      support_incident_updates: {
+        Row: {
+          author_user_id: string | null
+          body: string
+          created_at: string
+          id: string
+          incident_id: string
+          is_public: boolean
+          status: Database["public"]["Enums"]["support_incident_status"]
+        }
+        Insert: {
+          author_user_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          incident_id: string
+          is_public?: boolean
+          status: Database["public"]["Enums"]["support_incident_status"]
+        }
+        Update: {
+          author_user_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          incident_id?: string
+          is_public?: boolean
+          status?: Database["public"]["Enums"]["support_incident_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_incident_updates_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "support_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_incidents: {
+        Row: {
+          affected_components: string[]
+          created_at: string
+          created_by: string | null
+          id: string
+          identified_at: string | null
+          incident_number: string
+          is_public: boolean
+          resolved_at: string | null
+          scheduled_end: string | null
+          scheduled_start: string | null
+          severity: Database["public"]["Enums"]["support_incident_severity"]
+          started_at: string
+          status: Database["public"]["Enums"]["support_incident_status"]
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_components?: string[]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          identified_at?: string | null
+          incident_number: string
+          is_public?: boolean
+          resolved_at?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          severity?: Database["public"]["Enums"]["support_incident_severity"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["support_incident_status"]
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_components?: string[]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          identified_at?: string | null
+          incident_number?: string
+          is_public?: boolean
+          resolved_at?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          severity?: Database["public"]["Enums"]["support_incident_severity"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["support_incident_status"]
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_knowledge_articles: {
+        Row: {
+          audience: string
+          author_user_id: string | null
+          body_md: string
+          category_key: string | null
+          created_at: string
+          id: string
+          is_published: boolean
+          published_at: string | null
+          slug: string
+          summary: string | null
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          audience?: string
+          author_user_id?: string | null
+          body_md: string
+          category_key?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          slug: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          audience?: string
+          author_user_id?: string | null
+          body_md?: string
+          category_key?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          slug?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_knowledge_articles_category_key_fkey"
+            columns: ["category_key"]
+            isOneToOne: false
+            referencedRelation: "support_categories"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      support_priority_rules: {
+        Row: {
+          activated_at: string
+          created_at: string
+          description: string
+          is_active: boolean
+          version: number
+        }
+        Insert: {
+          activated_at?: string
+          created_at?: string
+          description: string
+          is_active?: boolean
+          version: number
+        }
+        Update: {
+          activated_at?: string
+          created_at?: string
+          description?: string
+          is_active?: boolean
+          version?: number
+        }
+        Relationships: []
+      }
+      support_role_assignments: {
+        Row: {
+          assignment_reason: string | null
+          contact_email: string | null
+          created_at: string
+          delegated_by: string | null
+          effective_from: string
+          effective_until: string | null
+          id: string
+          is_delegated: boolean
+          role_key: string
+          subject_kind: string
+          subject_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          assignment_reason?: string | null
+          contact_email?: string | null
+          created_at?: string
+          delegated_by?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          is_delegated?: boolean
+          role_key: string
+          subject_kind: string
+          subject_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assignment_reason?: string | null
+          contact_email?: string | null
+          created_at?: string
+          delegated_by?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          is_delegated?: boolean
+          role_key?: string
+          subject_kind?: string
+          subject_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_sla_targets: {
+        Row: {
+          business_hours_only: boolean
+          first_response_minutes: number
+          id: string
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          resolution_minutes: number
+          team_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_hours_only?: boolean
+          first_response_minutes: number
+          id?: string
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          resolution_minutes: number
+          team_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_hours_only?: boolean
+          first_response_minutes?: number
+          id?: string
+          priority?: Database["public"]["Enums"]["support_ticket_priority"]
+          resolution_minutes?: number
+          team_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_sla_targets_team_key_fkey"
+            columns: ["team_key"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      support_subcategories: {
+        Row: {
+          category_key: string
+          created_at: string
+          is_active: boolean
+          is_restricted: boolean
+          key: string
+          label: string
+          restriction_class:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_key: string
+          created_at?: string
+          is_active?: boolean
+          is_restricted?: boolean
+          key: string
+          label: string
+          restriction_class?:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_key?: string
+          created_at?: string
+          is_active?: boolean
+          is_restricted?: boolean
+          key?: string
+          label?: string
+          restriction_class?:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_subcategories_category_key_fkey"
+            columns: ["category_key"]
+            isOneToOne: false
+            referencedRelation: "support_categories"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      support_team_members: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          member_role: Database["public"]["Enums"]["support_team_member_role"]
+          team_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          member_role?: Database["public"]["Enums"]["support_team_member_role"]
+          team_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          member_role?: Database["public"]["Enums"]["support_team_member_role"]
+          team_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_team_members_team_key_fkey"
+            columns: ["team_key"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      support_teams: {
+        Row: {
+          created_at: string
+          description: string | null
+          is_active: boolean
+          key: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_ticket_access_audit: {
+        Row: {
+          access_kind: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          ticket_id: string
+        }
+        Insert: {
+          access_kind: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          ticket_id: string
+        }
+        Update: {
+          access_kind?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_access_audit_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          assignee_user_id: string | null
+          id: string
+          reason: string | null
+          team_key: string | null
+          ticket_id: string
+          unassigned_at: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          assignee_user_id?: string | null
+          id?: string
+          reason?: string | null
+          team_key?: string | null
+          ticket_id: string
+          unassigned_at?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          assignee_user_id?: string | null
+          id?: string
+          reason?: string | null
+          team_key?: string | null
+          ticket_id?: string
+          unassigned_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_assignments_team_key_fkey"
+            columns: ["team_key"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "support_ticket_assignments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_attachments: {
+        Row: {
+          created_at: string
+          filename: string
+          id: string
+          is_internal_only: boolean
+          message_id: string | null
+          mime_type: string
+          scan_note: string | null
+          scan_status: Database["public"]["Enums"]["support_attachment_scan_status"]
+          scanned_at: string | null
+          size_bytes: number
+          storage_bucket: string
+          storage_path: string
+          ticket_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          filename: string
+          id?: string
+          is_internal_only?: boolean
+          message_id?: string | null
+          mime_type: string
+          scan_note?: string | null
+          scan_status?: Database["public"]["Enums"]["support_attachment_scan_status"]
+          scanned_at?: string | null
+          size_bytes: number
+          storage_bucket?: string
+          storage_path: string
+          ticket_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          filename?: string
+          id?: string
+          is_internal_only?: boolean
+          message_id?: string | null
+          mime_type?: string
+          scan_note?: string | null
+          scan_status?: Database["public"]["Enums"]["support_attachment_scan_status"]
+          scanned_at?: string | null
+          size_bytes?: number
+          storage_bucket?: string
+          storage_path?: string
+          ticket_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_kind: Database["public"]["Enums"]["support_event_kind"]
+          id: string
+          payload: Json
+          represented_user_id: string | null
+          ticket_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_kind: Database["public"]["Enums"]["support_event_kind"]
+          id?: string
+          payload?: Json
+          represented_user_id?: string | null
+          ticket_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_kind?: Database["public"]["Enums"]["support_event_kind"]
+          id?: string
+          payload?: Json
+          represented_user_id?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_linked_records: {
+        Row: {
+          created_at: string
+          id: string
+          linked_by: string
+          permission_checked_at: string
+          record_kind: Database["public"]["Enums"]["support_linked_record_kind"]
+          safe_label: string
+          source_id: string
+          ticket_id: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          linked_by: string
+          permission_checked_at?: string
+          record_kind: Database["public"]["Enums"]["support_linked_record_kind"]
+          safe_label: string
+          source_id: string
+          ticket_id: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          linked_by?: string
+          permission_checked_at?: string
+          record_kind?: Database["public"]["Enums"]["support_linked_record_kind"]
+          safe_label?: string
+          source_id?: string
+          ticket_id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_linked_records_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_messages: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["support_message_kind"]
+          ticket_id: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["support_message_kind"]
+          ticket_id: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["support_message_kind"]
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          actual_result: string | null
+          affected_users_count: number | null
+          category_key: string
+          closed_at: string | null
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          created_by: string
+          current_assignee_user_id: string | null
+          current_team_key: string | null
+          customer_impact: Database["public"]["Enums"]["support_customer_impact"]
+          first_response_at: string | null
+          funder_org_id: string | null
+          id: string
+          intended_action: string | null
+          is_restricted: boolean
+          last_customer_message_at: string | null
+          last_internal_message_at: string | null
+          occurred_at: string | null
+          on_behalf_of_reason: string | null
+          on_behalf_of_user_id: string | null
+          org_id: string
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          priority_rules_version: number
+          priority_source: Database["public"]["Enums"]["support_priority_source"]
+          resolved_at: string | null
+          restriction_class:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          safe_context: Json
+          sla_first_response_due_at: string | null
+          sla_first_response_escalated_at: string | null
+          sla_resolution_due_at: string | null
+          sla_resolution_escalated_at: string | null
+          source: Database["public"]["Enums"]["support_ticket_source"]
+          status: Database["public"]["Enums"]["support_ticket_status"]
+          subcategory_key: string | null
+          subject: string
+          ticket_number: string
+          updated_at: string
+          workaround_available: boolean | null
+        }
+        Insert: {
+          actual_result?: string | null
+          affected_users_count?: number | null
+          category_key: string
+          closed_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by: string
+          current_assignee_user_id?: string | null
+          current_team_key?: string | null
+          customer_impact: Database["public"]["Enums"]["support_customer_impact"]
+          first_response_at?: string | null
+          funder_org_id?: string | null
+          id?: string
+          intended_action?: string | null
+          is_restricted?: boolean
+          last_customer_message_at?: string | null
+          last_internal_message_at?: string | null
+          occurred_at?: string | null
+          on_behalf_of_reason?: string | null
+          on_behalf_of_user_id?: string | null
+          org_id: string
+          priority?: Database["public"]["Enums"]["support_ticket_priority"]
+          priority_rules_version: number
+          priority_source?: Database["public"]["Enums"]["support_priority_source"]
+          resolved_at?: string | null
+          restriction_class?:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          safe_context?: Json
+          sla_first_response_due_at?: string | null
+          sla_first_response_escalated_at?: string | null
+          sla_resolution_due_at?: string | null
+          sla_resolution_escalated_at?: string | null
+          source?: Database["public"]["Enums"]["support_ticket_source"]
+          status?: Database["public"]["Enums"]["support_ticket_status"]
+          subcategory_key?: string | null
+          subject: string
+          ticket_number: string
+          updated_at?: string
+          workaround_available?: boolean | null
+        }
+        Update: {
+          actual_result?: string | null
+          affected_users_count?: number | null
+          category_key?: string
+          closed_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string
+          current_assignee_user_id?: string | null
+          current_team_key?: string | null
+          customer_impact?: Database["public"]["Enums"]["support_customer_impact"]
+          first_response_at?: string | null
+          funder_org_id?: string | null
+          id?: string
+          intended_action?: string | null
+          is_restricted?: boolean
+          last_customer_message_at?: string | null
+          last_internal_message_at?: string | null
+          occurred_at?: string | null
+          on_behalf_of_reason?: string | null
+          on_behalf_of_user_id?: string | null
+          org_id?: string
+          priority?: Database["public"]["Enums"]["support_ticket_priority"]
+          priority_rules_version?: number
+          priority_source?: Database["public"]["Enums"]["support_priority_source"]
+          resolved_at?: string | null
+          restriction_class?:
+            | Database["public"]["Enums"]["support_restriction_class"]
+            | null
+          safe_context?: Json
+          sla_first_response_due_at?: string | null
+          sla_first_response_escalated_at?: string | null
+          sla_resolution_due_at?: string | null
+          sla_resolution_escalated_at?: string | null
+          source?: Database["public"]["Enums"]["support_ticket_source"]
+          status?: Database["public"]["Enums"]["support_ticket_status"]
+          subcategory_key?: string | null
+          subject?: string
+          ticket_number?: string
+          updated_at?: string
+          workaround_available?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_category_key_fkey"
+            columns: ["category_key"]
+            isOneToOne: false
+            referencedRelation: "support_categories"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "support_tickets_current_team_key_fkey"
+            columns: ["current_team_key"]
+            isOneToOne: false
+            referencedRelation: "support_teams"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "support_tickets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_subcategory_key_fkey"
+            columns: ["subcategory_key"]
+            isOneToOne: false
+            referencedRelation: "support_subcategories"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -23308,6 +24268,42 @@ export type Database = {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }
         Returns: Json
       }
+      _support_calculate_priority: {
+        Args: {
+          _affected_users: number
+          _category_key: string
+          _impact: Database["public"]["Enums"]["support_customer_impact"]
+          _restriction_class: Database["public"]["Enums"]["support_restriction_class"]
+        }
+        Returns: {
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          source: Database["public"]["Enums"]["support_priority_source"]
+          version: number
+        }[]
+      }
+      _support_caller_org_id: { Args: never; Returns: string }
+      _support_next_priority: {
+        Args: { p: Database["public"]["Enums"]["support_ticket_priority"] }
+        Returns: Database["public"]["Enums"]["support_ticket_priority"]
+      }
+      _support_next_ticket_number: { Args: never; Returns: string }
+      _support_record_access: {
+        Args: {
+          _access_kind: string
+          _actor: string
+          _reason: string
+          _ticket_id: string
+        }
+        Returns: undefined
+      }
+      _support_resolve_restriction: {
+        Args: { _category_key: string; _subcategory_key: string }
+        Returns: {
+          is_restricted: boolean
+          restriction_class: Database["public"]["Enums"]["support_restriction_class"]
+        }[]
+      }
+      _support_rpc_result_signature: { Args: { _fn: string }; Returns: string }
       acknowledge_acceptance_receipt: {
         Args: {
           p_ip_address?: string
@@ -23323,6 +24319,16 @@ export type Database = {
       add_api_usage_alert_note: {
         Args: { p_alert_id: string; p_note: string }
         Returns: Json
+      }
+      add_support_ticket_linked_record: {
+        Args: {
+          _record_kind: Database["public"]["Enums"]["support_linked_record_kind"]
+          _safe_label: string
+          _source_id: string
+          _ticket_id: string
+          _visibility?: string
+        }
+        Returns: string
       }
       admin_archive_duplicate_match: {
         Args: {
@@ -23797,6 +24803,15 @@ export type Database = {
           p_side: string
         }
         Returns: Json
+      }
+      assign_support_ticket: {
+        Args: {
+          _assignee: string
+          _reason: string
+          _team_key: string
+          _ticket_id: string
+        }
+        Returns: string
       }
       atomic_accept_bind: {
         Args: {
@@ -24301,6 +25316,28 @@ export type Database = {
         Args: { p_admin_user_id: string; p_org_name: string; p_reason: string }
         Returns: Json
       }
+      create_support_ticket: {
+        Args: {
+          _actual_result?: string
+          _affected_users_count?: number
+          _category_key: string
+          _contact_email?: string
+          _contact_name?: string
+          _customer_impact: Database["public"]["Enums"]["support_customer_impact"]
+          _intended_action?: string
+          _occurred_at?: string
+          _on_behalf_of_reason?: string
+          _on_behalf_of_user_id?: string
+          _safe_context?: Json
+          _subcategory_key: string
+          _subject: string
+          _workaround_available?: boolean
+        }
+        Returns: {
+          id: string
+          ticket_number: string
+        }[]
+      }
       cron_invoke: {
         Args: {
           p_body?: Json
@@ -24387,6 +25424,23 @@ export type Database = {
       ensure_user_profile: {
         Args: { p_email: string; p_user_id: string }
         Returns: Json
+      }
+      escalate_overdue_support_tickets: {
+        Args: never
+        Returns: {
+          from_priority: Database["public"]["Enums"]["support_ticket_priority"]
+          gate: string
+          ticket_id: string
+          to_priority: Database["public"]["Enums"]["support_ticket_priority"]
+        }[]
+      }
+      escalate_support_ticket: {
+        Args: {
+          _new_priority: Database["public"]["Enums"]["support_ticket_priority"]
+          _reason: string
+          _ticket_id: string
+        }
+        Returns: undefined
       }
       facilitation_case_visible: {
         Args: { _case: string; _user: string }
@@ -24833,6 +25887,18 @@ export type Database = {
         Args: { _org_id: string }
         Returns: Database["public"]["Enums"]["gate_position"]
       }
+      get_published_kb_article: {
+        Args: { _slug: string }
+        Returns: {
+          body_md: string
+          category_key: string
+          id: string
+          published_at: string
+          slug: string
+          summary: string
+          title: string
+        }[]
+      }
       get_purge_email_send_log_cron_jobs: {
         Args: never
         Returns: {
@@ -24848,6 +25914,57 @@ export type Database = {
           _record_class: Database["public"]["Enums"]["org_retention_record_class"]
         }
         Returns: number
+      }
+      get_support_ticket: {
+        Args: { _ticket_id: string }
+        Returns: {
+          category_key: string
+          created_at: string
+          customer_impact: Database["public"]["Enums"]["support_customer_impact"]
+          id: string
+          is_restricted: boolean
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          status: Database["public"]["Enums"]["support_ticket_status"]
+          subcategory_key: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+        }[]
+      }
+      get_support_ticket_internal: {
+        Args: { _reason?: string; _ticket_id: string }
+        Returns: {
+          actual_result: string
+          affected_users_count: number
+          category_key: string
+          closed_at: string
+          contact_email: string
+          contact_name: string
+          created_at: string
+          created_by: string
+          customer_impact: Database["public"]["Enums"]["support_customer_impact"]
+          funder_org_id: string
+          id: string
+          intended_action: string
+          is_restricted: boolean
+          occurred_at: string
+          on_behalf_of_reason: string
+          on_behalf_of_user_id: string
+          org_id: string
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          priority_rules_version: number
+          priority_source: Database["public"]["Enums"]["support_priority_source"]
+          resolved_at: string
+          restriction_class: Database["public"]["Enums"]["support_restriction_class"]
+          safe_context: Json
+          source: Database["public"]["Enums"]["support_ticket_source"]
+          status: Database["public"]["Enums"]["support_ticket_status"]
+          subcategory_key: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+          workaround_available: boolean
+        }[]
       }
       get_test_mode_bypass_state: { Args: never; Returns: Json }
       get_test_mode_lockout_state: { Args: never; Returns: Json }
@@ -24869,6 +25986,13 @@ export type Database = {
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_support_capability: {
+        Args: {
+          _cap: Database["public"]["Enums"]["support_capability"]
           _user_id: string
         }
         Returns: boolean
@@ -24945,6 +26069,136 @@ export type Database = {
             }
             Returns: Json[]
           }
+      list_org_support_tickets: {
+        Args: never
+        Returns: {
+          actual_result: string
+          affected_users_count: number
+          category_key: string
+          closed_at: string
+          created_at: string
+          customer_impact: Database["public"]["Enums"]["support_customer_impact"]
+          id: string
+          intended_action: string
+          is_restricted: boolean
+          occurred_at: string
+          org_id: string
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          resolved_at: string
+          status: Database["public"]["Enums"]["support_ticket_status"]
+          subcategory_key: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+          workaround_available: boolean
+        }[]
+      }
+      list_own_support_tickets: {
+        Args: never
+        Returns: {
+          actual_result: string
+          affected_users_count: number
+          category_key: string
+          closed_at: string
+          created_at: string
+          customer_impact: Database["public"]["Enums"]["support_customer_impact"]
+          id: string
+          intended_action: string
+          is_restricted: boolean
+          occurred_at: string
+          org_id: string
+          priority: Database["public"]["Enums"]["support_ticket_priority"]
+          resolved_at: string
+          status: Database["public"]["Enums"]["support_ticket_status"]
+          subcategory_key: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+          workaround_available: boolean
+        }[]
+      }
+      list_public_incident_updates: {
+        Args: { _incident_id: string }
+        Returns: {
+          body: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["support_incident_status"]
+        }[]
+      }
+      list_public_incidents: {
+        Args: never
+        Returns: {
+          affected_components: string[]
+          id: string
+          incident_number: string
+          resolved_at: string
+          scheduled_end: string
+          scheduled_start: string
+          severity: Database["public"]["Enums"]["support_incident_severity"]
+          started_at: string
+          status: Database["public"]["Enums"]["support_incident_status"]
+          summary: string
+          title: string
+        }[]
+      }
+      list_published_kb_articles: {
+        Args: { _q: string }
+        Returns: {
+          category_key: string
+          id: string
+          published_at: string
+          slug: string
+          summary: string
+          title: string
+        }[]
+      }
+      list_support_ticket_attachments: {
+        Args: { _ticket_id: string }
+        Returns: {
+          created_at: string
+          filename: string
+          id: string
+          is_internal_only: boolean
+          mime_type: string
+          scan_status: Database["public"]["Enums"]["support_attachment_scan_status"]
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string
+        }[]
+      }
+      list_support_ticket_customer_messages: {
+        Args: { _ticket_id: string }
+        Returns: {
+          author_is_self: boolean
+          body: string
+          created_at: string
+          id: string
+          ticket_id: string
+        }[]
+      }
+      list_support_ticket_events_internal: {
+        Args: { _ticket_id: string }
+        Returns: {
+          actor_user_id: string
+          created_at: string
+          event_kind: Database["public"]["Enums"]["support_event_kind"]
+          id: string
+          payload: Json
+          represented_user_id: string
+          ticket_id: string
+        }[]
+      }
+      list_support_ticket_internal_notes: {
+        Args: { _ticket_id: string }
+        Returns: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          ticket_id: string
+        }[]
+      }
       log_api_client_usage_csv_export: {
         Args: {
           p_api_client_id: string
@@ -26512,6 +27766,14 @@ export type Database = {
               isSetofReturn: false
             }
           }
+      post_support_ticket_customer_message: {
+        Args: { _body: string; _ticket_id: string }
+        Returns: string
+      }
+      post_support_ticket_internal_note: {
+        Args: { _body: string; _ticket_id: string }
+        Returns: string
+      }
       prune_webhook_replay_guard: { Args: never; Returns: number }
       public_api_support_ticket_client_shape: {
         Args: { t: Database["public"]["Tables"]["api_support_tickets"]["Row"] }
@@ -26632,6 +27894,18 @@ export type Database = {
           p_request_id: string
         }
         Returns: Json
+      }
+      register_support_ticket_attachment: {
+        Args: {
+          _filename: string
+          _is_internal: boolean
+          _message_id: string
+          _mime_type: string
+          _size_bytes: number
+          _storage_path: string
+          _ticket_id: string
+        }
+        Returns: string
       }
       registry_api_scope_is_forbidden: {
         Args: { _scope: string }
@@ -26834,6 +28108,14 @@ export type Database = {
           p_status?: string
         }
         Returns: Json
+      }
+      update_support_ticket_status: {
+        Args: {
+          _new_status: Database["public"]["Enums"]["support_ticket_status"]
+          _reason?: string
+          _ticket_id: string
+        }
+        Returns: undefined
       }
       verify_acceptance_receipt: {
         Args: { p_receipt_id: string }
@@ -27381,6 +28663,72 @@ export type Database = {
         | "disabled"
       revenue_notification_status: "sent" | "failed" | "skipped"
       signal_type: "buyer" | "seller"
+      support_attachment_scan_status:
+        | "pending"
+        | "clean"
+        | "infected"
+        | "failed"
+      support_capability:
+        | "support_read"
+        | "support_triage"
+        | "support_reply_customer"
+        | "support_add_internal_note"
+        | "support_lead"
+        | "support_specialist_lead"
+      support_customer_impact:
+        | "affects_me"
+        | "affects_organisation"
+        | "blocks_transaction_or_deadline"
+      support_event_kind:
+        | "ticket_created"
+        | "status_changed"
+        | "priority_calculated"
+        | "customer_message_added"
+        | "internal_note_added"
+        | "linked_record_added"
+      support_incident_severity: "minor" | "major" | "critical" | "maintenance"
+      support_incident_status:
+        | "investigating"
+        | "identified"
+        | "monitoring"
+        | "resolved"
+        | "scheduled"
+        | "in_progress"
+        | "completed"
+      support_linked_record_kind:
+        | "match"
+        | "poi"
+        | "wad"
+        | "document"
+        | "payment"
+        | "funder_grant"
+        | "api_client"
+        | "organisation"
+        | "other"
+      support_message_kind: "customer_visible" | "internal_note"
+      support_priority_source: "calculated" | "override" | "security_default"
+      support_restriction_class:
+        | "compliance_verification"
+        | "identity"
+        | "security"
+        | "funder_evidence"
+        | "payment_dispute"
+      support_team_member_role: "lead" | "member"
+      support_ticket_priority: "low" | "medium" | "high" | "urgent"
+      support_ticket_source:
+        | "portal"
+        | "on_behalf_of"
+        | "legacy_api_ticket"
+        | "internal"
+      support_ticket_status:
+        | "new"
+        | "in_progress"
+        | "waiting_for_customer"
+        | "resolved"
+        | "confirmation_requested"
+        | "closed"
+        | "reopened"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -28076,6 +29424,81 @@ export const Constants = {
       ],
       revenue_notification_status: ["sent", "failed", "skipped"],
       signal_type: ["buyer", "seller"],
+      support_attachment_scan_status: [
+        "pending",
+        "clean",
+        "infected",
+        "failed",
+      ],
+      support_capability: [
+        "support_read",
+        "support_triage",
+        "support_reply_customer",
+        "support_add_internal_note",
+        "support_lead",
+        "support_specialist_lead",
+      ],
+      support_customer_impact: [
+        "affects_me",
+        "affects_organisation",
+        "blocks_transaction_or_deadline",
+      ],
+      support_event_kind: [
+        "ticket_created",
+        "status_changed",
+        "priority_calculated",
+        "customer_message_added",
+        "internal_note_added",
+        "linked_record_added",
+      ],
+      support_incident_severity: ["minor", "major", "critical", "maintenance"],
+      support_incident_status: [
+        "investigating",
+        "identified",
+        "monitoring",
+        "resolved",
+        "scheduled",
+        "in_progress",
+        "completed",
+      ],
+      support_linked_record_kind: [
+        "match",
+        "poi",
+        "wad",
+        "document",
+        "payment",
+        "funder_grant",
+        "api_client",
+        "organisation",
+        "other",
+      ],
+      support_message_kind: ["customer_visible", "internal_note"],
+      support_priority_source: ["calculated", "override", "security_default"],
+      support_restriction_class: [
+        "compliance_verification",
+        "identity",
+        "security",
+        "funder_evidence",
+        "payment_dispute",
+      ],
+      support_team_member_role: ["lead", "member"],
+      support_ticket_priority: ["low", "medium", "high", "urgent"],
+      support_ticket_source: [
+        "portal",
+        "on_behalf_of",
+        "legacy_api_ticket",
+        "internal",
+      ],
+      support_ticket_status: [
+        "new",
+        "in_progress",
+        "waiting_for_customer",
+        "resolved",
+        "confirmation_requested",
+        "closed",
+        "reopened",
+        "cancelled",
+      ],
     },
   },
 } as const

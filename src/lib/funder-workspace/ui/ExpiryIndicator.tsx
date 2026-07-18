@@ -10,13 +10,13 @@ interface Props {
 }
 
 /**
- * Renders an expiry as `12 Jul 2026 - in 5 days` with colour cue for
+ * Renders an expiry as `12 Jul 2026 · in 5 days` with colour cue for
  * <= 14 days (amber) and <= 0 (destructive). Passive info, not a badge.
  */
 export function ExpiryIndicator({ expiresAt, now = Date.now(), compact }: Props) {
-  if (!expiresAt) return <span className="text-muted-foreground">-</span>;
+  if (!expiresAt) return <span className="text-muted-foreground">—</span>;
   const t = Date.parse(expiresAt);
-  if (!Number.isFinite(t)) return <span className="text-muted-foreground">-</span>;
+  if (!Number.isFinite(t)) return <span className="text-muted-foreground">—</span>;
   const remaining = t - now;
   let cls = "text-foreground";
   if (remaining <= 0) cls = "text-destructive font-medium";
@@ -26,7 +26,7 @@ export function ExpiryIndicator({ expiresAt, now = Date.now(), compact }: Props)
   return (
     <span className={cls}>
       {date}
-      {!compact && <span className="text-muted-foreground"> - {rel}</span>}
+      {!compact && <span className="text-muted-foreground"> · {rel}</span>}
     </span>
   );
 }

@@ -5,7 +5,7 @@ interface Props {
   className?: string;
 }
 
-export function LoadingState({ label = "Loading...", className }: Props) {
+export function LoadingState({ label = "Loading…", className }: Props) {
   return (
     <div
       className={

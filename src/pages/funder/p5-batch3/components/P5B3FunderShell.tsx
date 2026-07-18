@@ -1,11 +1,13 @@
 /**
  * P-5 Batch 3 — Stage 5 funder shell.
  *
- * Wraps all /funder/p5-batch3/* pages with a consistent header and a
- * release-only disclaimer. Funder surfaces show only admin-released data.
+ * Content-level wrapper used inside the persona-scoped FunderShell. Provides
+ * only the batch-specific title, description and release disclaimer; the app
+ * chrome (sidebar, top bar, sign-out) is supplied by FunderShell so the
+ * funder navigates every batch in one consistent shell.
  */
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { LegacyBanner } from "@/lib/funder-workspace/ui";
 
 export function P5B3FunderShell({
   title,
@@ -18,9 +20,7 @@ export function P5B3FunderShell({
 }) {
   return (
     <div className="p-6 space-y-4 max-w-5xl">
-      <Link to="/funder/p5-batch3" className="text-sm text-muted-foreground underline">
-        ← Funder workspace
-      </Link>
+      <LegacyBanner surface="P-5 Batch 3 funder workflow" />
       <div>
         <h1 className="text-2xl font-semibold">{title}</h1>
         {description ? (

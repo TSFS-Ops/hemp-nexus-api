@@ -1,5 +1,5 @@
 /**
- * Funder Workspace - single status badge component for every status enum
+ * Funder Workspace — single status badge component for every status enum
  * we render (release, consent, pack, org, approval, user, generic).
  * Colour semantics are consistent across all funder surfaces.
  */
@@ -74,7 +74,7 @@ interface Props {
 }
 
 export function StatusBadge({ kind, value, className }: Props) {
-  if (!value) return <Badge variant="secondary" className={className}>-</Badge>;
+  if (!value) return <Badge variant="secondary" className={className}>—</Badge>;
   let variant: Variant = "secondary";
   let label = humanize(value);
   switch (kind) {

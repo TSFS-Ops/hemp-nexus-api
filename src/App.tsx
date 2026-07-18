@@ -20,6 +20,7 @@ import { MaintenancePage, MAINTENANCE_MODE } from "@/components/MaintenancePage"
 import { SessionExpiredModal } from "@/components/SessionExpiredModal";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { CrossTabCacheBridge } from "@/lib/cross-tab-bus";
+import { PersonaShellRouter } from "@/components/shells/PersonaShellRouter";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
@@ -71,6 +72,30 @@ const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
 const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/CounterpartyRatingMethodology"));
 const Status = lazy(() => import("@/pages/Status"));
 const Trust = lazy(() => import("@/pages/Trust"));
+
+// Enterprise Support Centre — Batch 1
+const SupportPortal = lazy(() => import("@/pages/support/Portal"));
+const SupportNewTicket = lazy(() => import("@/pages/support/NewTicket"));
+const SupportTicketDetail = lazy(() => import("@/pages/support/TicketDetail"));
+const SupportIncidents = lazy(() => import("@/pages/support/Incidents"));
+const SupportKbIndex = lazy(() =>
+  import("@/pages/support/KnowledgeBase").then((m) => ({ default: m.KbIndex }))
+);
+const SupportKbArticle = lazy(() =>
+  import("@/pages/support/KnowledgeBase").then((m) => ({ default: m.KbArticle }))
+);
+const AdminSupportQueue = lazy(() => import("@/pages/admin/support/Queue"));
+const AdminSupportTicketDetail = lazy(
+  () => import("@/pages/admin/support/TicketDetail")
+);
+const AdminSupportIncidents = lazy(() => import("@/pages/admin/support/Incidents"));
+const AdminSupportKnowledgeBase = lazy(
+  () => import("@/pages/admin/support/KnowledgeBase")
+);
+const AdminSupportSla = lazy(() => import("@/pages/admin/support/Sla"));
+const AdminSupportEscalationRuns = lazy(
+  () => import("@/pages/admin/support/EscalationRuns")
+);
 
 // Batch V-UI — IDV client-facing screens (person-only IDV)
 const IdvStart = lazy(() => import("@/pages/desk/idv/IdvStart"));
@@ -152,6 +177,25 @@ const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notif
 // P-5 Batch 1 — Governance, Compliance & Readiness admin surface
 const P5GovernanceCasesDashboard = lazy(() => import("@/pages/admin/p5-governance/CasesDashboard"));
 const P5GovernanceCaseDetail = lazy(() => import("@/pages/admin/p5-governance/CaseDetail"));
+// Enterprise Compliance Case Management Workbench (UI slice)
+const ComplianceWorkbenchShell = lazy(() =>
+  import("@/components/compliance-workbench").then((m) => ({ default: m.ComplianceWorkbenchShell })),
+);
+const CWOverview = lazy(() => import("@/pages/hq/compliance/Overview"));
+const CWQueue = lazy(() => import("@/pages/hq/compliance/CaseQueue"));
+const CWMyCases = lazy(() => import("@/pages/hq/compliance/MyCases"));
+const CWUnassigned = lazy(() => import("@/pages/hq/compliance/Unassigned"));
+const CWApprovals = lazy(() => import("@/pages/hq/compliance/PendingApprovals"));
+const CWHolds = lazy(() => import("@/pages/hq/compliance/ActiveHolds"));
+const CWRfis = lazy(() => import("@/pages/hq/compliance/OverdueRfis"));
+const CWProviderExceptions = lazy(() => import("@/pages/hq/compliance/ProviderExceptions"));
+const CWPeriodic = lazy(() => import("@/pages/hq/compliance/PeriodicReviews"));
+const CWAppeals = lazy(() => import("@/pages/hq/compliance/Appeals"));
+const CWReports = lazy(() => import("@/pages/hq/compliance/Reports"));
+const CWCaseDetail = lazy(() => import("@/pages/hq/compliance/CaseDetail"));
+const DeskComplianceCases = lazy(() => import("@/pages/desk/compliance-cases/Index"));
+const DeskComplianceCaseDetail = lazy(() => import("@/pages/desk/compliance-cases/CaseDetail"));
+const FunderComplianceSummary = lazy(() => import("@/pages/funder/compliance-summary/Index"));
 // P-5 Batch 2 — KYC / KYB Evidence & Artefacts admin/operator surfaces (Stage 4)
 const P5Batch2EvidenceDashboard = lazy(() => import("@/pages/admin/p5-batch2/EvidenceDashboard"));
 const P5Batch2RecordDetail = lazy(() => import("@/pages/admin/p5-batch2/RecordDetail"));
@@ -287,6 +331,7 @@ function App() {
               <AuthRedirectNoticeBanner />
               <RouteErrorBoundary>
                 <Suspense fallback={<FullPageLoader />}>
+                <PersonaShellRouter>
                 <Routes>
                   <Route path={ROUTES.ROOT} element={<RootElement />} />
                   {/* Canonical redirect: /landing → / */}
@@ -407,6 +452,41 @@ function App() {
                   {/* P-5 Batch 1 — Governance, Compliance & Readiness (admin/internal) */}
                   <Route path="/admin/p5-governance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCasesDashboard /></RequireAuth>} />
                   <Route path="/admin/p5-governance/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCaseDetail /></RequireAuth>} />
+
+                  {/* Enterprise Compliance Case Management Workbench (UI slice) */}
+                  <Route
+                    path="/hq/compliance"
+                    element={
+                      <RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk">
+                        <ComplianceWorkbenchShell />
+                      </RequireAuth>
+                    }
+                  >
+                    <Route index element={<CWOverview />} />
+                    <Route path="queue" element={<CWQueue />} />
+                    <Route path="my" element={<CWMyCases />} />
+                    <Route path="unassigned" element={<CWUnassigned />} />
+                    <Route path="approvals" element={<CWApprovals />} />
+                    <Route path="holds" element={<CWHolds />} />
+                    <Route path="rfis" element={<CWRfis />} />
+                    <Route path="provider-exceptions" element={<CWProviderExceptions />} />
+                    <Route path="periodic-reviews" element={<CWPeriodic />} />
+                    <Route path="appeals" element={<CWAppeals />} />
+                    <Route path="reports" element={<CWReports />} />
+                    <Route path="cases/:reference" element={<CWCaseDetail />} />
+                  </Route>
+                  <Route
+                    path="/desk/compliance-cases"
+                    element={<RequireAuth><DeskComplianceCases /></RequireAuth>}
+                  />
+                  <Route
+                    path="/desk/compliance-cases/:reference"
+                    element={<RequireAuth><DeskComplianceCaseDetail /></RequireAuth>}
+                  />
+                  <Route
+                    path="/funder/compliance-summary"
+                    element={<RequireAuth><FunderComplianceSummary /></RequireAuth>}
+                  />
 
                   {/* P-5 Batch 2 — Stage 4: Admin/operator Evidence & Artefacts surfaces */}
                   <Route path="/admin/p5-batch2" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2EvidenceDashboard /></RequireAuth>} />
@@ -598,9 +678,25 @@ function App() {
                       restricts that role to the Facilitation tab and hides every other tab. */}
                   <Route path="/hq" element={<RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk"><HQ /></RequireAuth>} />
                   <Route path="/hq/:tab" element={<RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk"><HQ /></RequireAuth>} />
+
+                  {/* Enterprise Support Centre */}
+                  <Route path="/support" element={<RequireAuth><SupportPortal /></RequireAuth>} />
+                  <Route path="/support/new" element={<RequireAuth><SupportNewTicket /></RequireAuth>} />
+                  <Route path="/support/tickets/:id" element={<RequireAuth><SupportTicketDetail /></RequireAuth>} />
+                  <Route path="/support/incidents" element={<SupportIncidents />} />
+                  <Route path="/support/kb" element={<SupportKbIndex />} />
+                  <Route path="/support/kb/:slug" element={<SupportKbArticle />} />
+                  <Route path="/admin/support" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportQueue /></RequireAuth>} />
+                  <Route path="/admin/support/tickets/:id" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportTicketDetail /></RequireAuth>} />
+                  <Route path="/admin/support/incidents" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportIncidents /></RequireAuth>} />
+                  <Route path="/admin/support/kb" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportKnowledgeBase /></RequireAuth>} />
+                  <Route path="/admin/support/sla" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportSla /></RequireAuth>} />
+                  <Route path="/admin/support/escalation-runs" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportEscalationRuns /></RequireAuth>} />
+
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </PersonaShellRouter>
                 </Suspense>
               </RouteErrorBoundary>
               <Sonner />

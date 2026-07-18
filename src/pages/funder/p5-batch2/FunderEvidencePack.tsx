@@ -14,6 +14,7 @@ import {
   type P5B2ReadinessSummary,
 } from "@/lib/p5-batch2/summary-client";
 import { maskP5B2Field } from "@/lib/p5-batch2/masking";
+import { LegacyBanner } from "@/lib/funder-workspace/ui";
 
 export default function FunderEvidencePackP5B2() {
   const [params] = useSearchParams();
@@ -38,6 +39,7 @@ export default function FunderEvidencePackP5B2() {
 
   return (
     <main className="container mx-auto py-8 space-y-6" data-testid="funder-evidence-pack-p5b2">
+      <LegacyBanner surface="P-5 Batch 2 evidence pack" />
       <header>
         <h1 className="text-2xl font-semibold">Evidence pack</h1>
         <p className="text-slate-600 mt-1">

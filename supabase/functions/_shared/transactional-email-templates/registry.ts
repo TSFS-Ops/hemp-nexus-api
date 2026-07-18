@@ -21,6 +21,9 @@ import { template as acceptanceReceipt } from './acceptance-receipt.tsx'
 import { template as revenueEventNotify } from './revenue-event-notify.tsx'
 import { template as batchDInitiatorAlert } from './batch-d-initiator-alert.tsx'
 import { template as adminAlert } from './admin-alert.tsx'
+import { template as supportTicketCustomerUpdate } from './support-ticket-customer-update.tsx'
+import { template as supportStaffAlert } from './support-staff-alert.tsx'
+import { template as supportIncidentUpdate } from './support-incident-update.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'match-notification': matchNotification,
@@ -40,4 +43,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   // notification-dispatch. Routes admin alerts through the healthy
   // platform email queue.
   'admin-alert': adminAlert,
+  'support-ticket-customer-update': supportTicketCustomerUpdate,
+  'support-staff-alert': supportStaffAlert,
+  'support-incident-update': supportIncidentUpdate,
 }

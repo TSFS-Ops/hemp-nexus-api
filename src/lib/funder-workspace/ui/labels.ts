@@ -1,5 +1,5 @@
 /**
- * Funder Workspace - single source of truth for human-friendly labels.
+ * Funder Workspace — single source of truth for human-friendly labels.
  * Every canonical funder page (and every legacy page we touch) MUST render
  * enums, statuses and technical identifiers through the helpers here. No
  * per-file competing maps.
@@ -89,9 +89,9 @@ export const USAGE_EVENT_LABELS: Record<UsageEventType, string> = {
   user_deactivated: "User deactivated",
 };
 
-/** Generic humanizer for unmapped enums - last resort fallback only. */
+/** Generic humanizer for unmapped enums — last resort fallback only. */
 export function humanize(value: string | null | undefined): string {
-  if (value == null || value === "") return "-";
+  if (value == null || value === "") return "—";
   return value
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -107,30 +107,30 @@ export function packStatusLabel(s: PackVersionRow["status"]): string {
   return PACK_STATUS_LABELS[s] ?? humanize(s);
 }
 export function orgStatusLabel(s: FunderOrgStatus | string | null | undefined): string {
-  if (!s) return "-";
+  if (!s) return "—";
   return ORG_STATUS_LABELS[s as FunderOrgStatus] ?? humanize(s);
 }
 export function approvalStatusLabel(
   s: FunderOrgApprovalStatus | string | null | undefined,
 ): string {
-  if (!s) return "-";
+  if (!s) return "—";
   return APPROVAL_STATUS_LABELS[s as FunderOrgApprovalStatus] ?? humanize(s);
 }
 export function funderRoleLabel(role: string | null | undefined): string {
-  if (!role) return "-";
+  if (!role) return "—";
   return FUNDER_ROLE_LABELS[role as P5B3FunderRole] ?? humanize(role);
 }
 export function funderUserStatusLabel(
   s: P5B3FunderUserStatus | string | null | undefined,
 ): string {
-  if (!s) return "-";
+  if (!s) return "—";
   return FUNDER_USER_STATUS_LABELS[s as P5B3FunderUserStatus] ?? humanize(s);
 }
 export function usageEventLabel(t: UsageEventType | string): string {
   return USAGE_EVENT_LABELS[t as UsageEventType] ?? humanize(t);
 }
 
-// Date & identifier formatters
+// ─── Date & identifier formatters ────────────────────────────
 
 const dateFmt = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
@@ -146,21 +146,21 @@ const dateTimeFmt = new Intl.DateTimeFormat(undefined, {
 });
 
 export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "-";
+  if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "-" : dateFmt.format(d);
+  return Number.isNaN(d.getTime()) ? "—" : dateFmt.format(d);
 }
 export function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "-";
+  if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "-" : dateTimeFmt.format(d);
+  return Number.isNaN(d.getTime()) ? "—" : dateTimeFmt.format(d);
 }
 
 /** Short, human "in 3 days" / "2 hours ago" without pulling a dep. */
 export function relativeFromNow(iso: string | null | undefined, now = Date.now()): string {
-  if (!iso) return "-";
+  if (!iso) return "—";
   const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return "-";
+  if (!Number.isFinite(t)) return "—";
   const diffMs = t - now;
   const abs = Math.abs(diffMs);
   const mins = Math.round(abs / 60_000);
@@ -176,11 +176,11 @@ export function relativeFromNow(iso: string | null | undefined, now = Date.now()
 
 /**
  * Redact a UUID/hash so it's visible for support triage but not shouted
- * as identity. Use ONLY as a small `<code>` under a real label - never
+ * as identity. Use ONLY as a small `<code>` under a real label — never
  * as the primary heading.
  */
 export function shortId(id: string | null | undefined): string {
-  if (!id) return "-";
+  if (!id) return "—";
   if (id.length <= 12) return id;
-  return `${id.slice(0, 8)}...${id.slice(-4)}`;
+  return `${id.slice(0, 8)}…${id.slice(-4)}`;
 }
