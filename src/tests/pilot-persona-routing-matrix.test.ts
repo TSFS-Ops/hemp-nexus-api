@@ -67,6 +67,8 @@ const PILOT_ACCOUNTS: PilotAccount[] = [
 ];
 
 const base = {
+  isPlatformAdmin: false,
+  isFunderUser: false,
   persona: null,
   rawReturnTo: null,
   returnToIsIntentional: false,
