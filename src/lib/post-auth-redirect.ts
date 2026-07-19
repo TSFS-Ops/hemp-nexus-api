@@ -37,6 +37,15 @@ export type Persona = "developer" | "governance" | "trade" | null | undefined;
 export interface PostAuthInputs {
   /** True if the user has the platform_admin role. */
   isPlatformAdmin: boolean;
+  /**
+   * True if the user has an active row in `p5_batch3_funder_users`
+   * (any funder role: funder_org_admin, funder_approver, funder_reviewer,
+   * funder_viewer, external_adviser). When true, the workspace treats them
+   * as an Institutional Funder Evidence Workspace user for landing-route
+   * purposes. A redirect is not a security control — RLS on
+   * funder_deal_releases / p5_batch3_* still governs data access.
+   */
+  isFunderUser?: boolean;
   /** Persisted persona selection, if any. */
   persona: Persona;
   /** Raw `returnTo` query-string value (untrusted). */
