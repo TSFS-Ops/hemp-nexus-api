@@ -21,6 +21,7 @@ import { SessionExpiredModal } from "@/components/SessionExpiredModal";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { CrossTabCacheBridge } from "@/lib/cross-tab-bus";
 import { PersonaShellRouter } from "@/components/shells/PersonaShellRouter";
+import { FunderOnlyDeskGuard } from "@/components/FunderOnlyDeskGuard";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
