@@ -39,12 +39,12 @@ export default function FunderWorkspaceIndex() {
       title="Assigned deals"
       description="Deals released to your organisation by Izenzo."
     >
-      {() => <DashboardBody />}
+      {(ctx) => <DashboardBody orgName={ctx.organisation.name} />}
     </FunderWorkspaceShell>
   );
 }
 
-function DashboardBody() {
+function DashboardBody({ orgName }: { orgName: string }) {
   const [rows, setRows] = useState<DealReleaseRow[] | null>(null);
   const [counters, setCounters] = useState<FunderWorkspaceFunderCounters | null>(null);
   const [err, setErr] = useState<string | null>(null);
