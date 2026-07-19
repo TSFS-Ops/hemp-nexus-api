@@ -103,7 +103,14 @@ export function resolvePostAuthDestination(input: PostAuthInputs): string {
     return `${honoured}${honoured.includes("?") ? "&" : "?"}resume=1`;
   }
 
-  // 2) Platform admin default — per client direction (David Davies,
+  // 2) Institutional Funder Evidence Workspace users land in the canonical
+  //    funder workspace by default. Their active persona for this session is
+  //    the funder role — the ordinary Trade Desk is not the right chrome.
+  //    An honoured deep-link (above) still wins so a funder can be
+  //    invited into a specific /funder/workspace/deals/... URL.
+  if (input.isFunderUser) return "/funder/workspace";
+
+  // 3) Platform admin default — per client direction (David Davies,
   //    2026-06-25): a normal sign-in from the public homepage must NOT dump
   //    admins straight into HQ. They land on `/` in a logged-in state and
   //    use the homepage "Go to HQ" CTA to enter the workspace.
