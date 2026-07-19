@@ -334,6 +334,7 @@ function App() {
               <RouteErrorBoundary>
                 <Suspense fallback={<FullPageLoader />}>
                 <PersonaShellRouter>
+                <FunderPersonaContainment>
                 <Routes>
                   <Route path={ROUTES.ROOT} element={<RootElement />} />
                   {/* Canonical redirect: /landing → / */}
@@ -698,6 +699,7 @@ function App() {
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </FunderPersonaContainment>
                 </PersonaShellRouter>
                 </Suspense>
               </RouteErrorBoundary>
