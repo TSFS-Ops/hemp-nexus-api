@@ -77,6 +77,35 @@ export default function Auth() {
       console.warn("[Auth] role lookup threw - treating as non-admin", e);
     }
 
+    // Funder-persona lookup. Funder roles are NOT stored in user_roles —
+    // they live on public.p5_batch3_funder_users, linked by auth_user_id.
+    // A user with an active row here should land on the canonical Funder
+    // Workspace, not the ordinary Trade Desk. RLS on funder_deal_releases
+    // and friends still governs data access; this only chooses the shell.
+    let isFunderUser = false;
+    try {
+      const { data: funderRow, error: funderErr } = await (supabase as unknown as {
+        from: (t: string) => {
+          select: (c: string) => {
+            eq: (a: string, b: string) => {
+              in: (a: string, b: string[]) => {
+                maybeSingle: () => Promise<{ data: { id: string } | null; error: { message?: string } | null }>;
+              };
+            };
+          };
+        };
+      })
+        .from("p5_batch3_funder_users")
+        .select("id")
+        .eq("auth_user_id", userId)
+        .in("status", ["active", "pending", "invited"])
+        .maybeSingle();
+      console.info("[Auth] funder lookup", { funder: funderRow, funderErr: funderErr?.message });
+      isFunderUser = !!funderRow;
+    } catch (e) {
+      console.warn("[Auth] funder lookup threw - treating as non-funder", e);
+    }
+
     // 1) Honoured protected returnTo wins for all roles.
     if (honoured) {
       try {
@@ -96,7 +125,16 @@ export default function Auth() {
       return final;
     }
 
-    // 2) Platform admin without an intentional deep link → land on `/`.
+    // 2) Funder-persona users land in the canonical Funder Workspace.
+    //    This intentionally takes precedence over platform-admin so a
+    //    platform admin who also has a funder seat (e.g. Izenzo test
+    //    accounts) sees the workspace they explicitly signed in as.
+    if (isFunderUser) {
+      console.info("[Auth] resolved → /funder/workspace (active funder user)");
+      return "/funder/workspace";
+    }
+
+    // 3) Platform admin without an intentional deep link → land on `/`.
     //    Homepage exposes a "Go to HQ" CTA for the next step.
     if (isPlatformAdmin) {
       console.info("[Auth] resolved → / (platform admin, no protected returnTo)");

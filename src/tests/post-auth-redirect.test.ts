@@ -194,4 +194,97 @@ describe("resolvePostAuthDestination", () => {
       "/governance/triage",
     );
   });
+
+  // ── Institutional Funder Evidence Workspace landing routing ──
+  //
+  // Funder users (any funder role: funder_org_admin / funder_approver /
+  // funder_reviewer / funder_viewer / external_adviser / Isolation Test
+  // Fund viewer) MUST land on /funder/workspace after a normal sign-in.
+  // Dropping them onto /desk would expose irrelevant trading chrome and
+  // was reported by the client on 2026-07-15.
+  describe("funder persona landing", () => {
+    it("funder user, no returnTo → /funder/workspace", () => {
+      expect(
+        resolvePostAuthDestination({ ...base, isFunderUser: true }),
+      ).toBe("/funder/workspace");
+    });
+
+    it("funder user with trade persona → still /funder/workspace (active persona wins)", () => {
+      expect(
+        resolvePostAuthDestination({
+          ...base,
+          isFunderUser: true,
+          persona: "trade",
+        }),
+      ).toBe("/funder/workspace");
+    });
+
+    it("funder user with no selected persona → /funder/workspace (never /welcome)", () => {
+      expect(
+        resolvePostAuthDestination({
+          ...base,
+          isFunderUser: true,
+          persona: null,
+        }),
+      ).toBe("/funder/workspace");
+    });
+
+    it("funder user with pre-auth trade journey → funder wins, no /desk drop", () => {
+      expect(
+        resolvePostAuthDestination({
+          ...base,
+          isFunderUser: true,
+          hasPreAuthJourney: true,
+        }),
+      ).toBe("/funder/workspace");
+    });
+
+    it("funder user with intentional protected returnTo → honoured deep link wins", () => {
+      expect(
+        resolvePostAuthDestination({
+          ...base,
+          isFunderUser: true,
+          rawReturnTo: "/funder/workspace/deals/abc123",
+          returnToIsIntentional: true,
+        }),
+      ).toBe("/funder/workspace/deals/abc123?resume=1");
+    });
+
+    it("funder user with external returnTo → ignored, funder default kicks in", () => {
+      expect(
+        resolvePostAuthDestination({
+          ...base,
+          isFunderUser: true,
+          rawReturnTo: "https://evil.example.com/desk",
+          returnToIsIntentional: true,
+        }),
+      ).toBe("/funder/workspace");
+    });
+
+    it("funder + platform_admin (dual seat) → funder workspace (active persona wins)", () => {
+      expect(
+        resolvePostAuthDestination({
+          ...base,
+          isFunderUser: true,
+          isPlatformAdmin: true,
+        }),
+      ).toBe("/funder/workspace");
+    });
+
+    it("non-funder trade user is unaffected by funder branch", () => {
+      expect(
+        resolvePostAuthDestination({ ...base, isFunderUser: false }),
+      ).toBe("/");
+    });
+
+    it("non-funder platform admin still lands on / (unchanged)", () => {
+      expect(
+        resolvePostAuthDestination({
+          ...base,
+          isFunderUser: false,
+          isPlatformAdmin: true,
+        }),
+      ).toBe("/");
+    });
+  });
 });

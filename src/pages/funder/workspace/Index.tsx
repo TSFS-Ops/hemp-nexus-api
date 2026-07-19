@@ -39,12 +39,12 @@ export default function FunderWorkspaceIndex() {
       title="Assigned deals"
       description="Deals released to your organisation by Izenzo."
     >
-      {() => <DashboardBody />}
+      {(ctx) => <DashboardBody orgName={ctx.organisation.name} />}
     </FunderWorkspaceShell>
   );
 }
 
-function DashboardBody() {
+function DashboardBody({ orgName }: { orgName: string }) {
   const [rows, setRows] = useState<DealReleaseRow[] | null>(null);
   const [counters, setCounters] = useState<FunderWorkspaceFunderCounters | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -118,8 +118,8 @@ function DashboardBody() {
             <LoadingState label="Loading your assigned deals…" />
           ) : rows.length === 0 ? (
             <EmptyState
-              title="No assigned deals yet"
-              description="Izenzo will notify you when a deal is released to your organisation."
+              title={`No deals have been released to ${orgName} yet`}
+              description="Once Izenzo releases a deal to your organisation, it will appear here. You will also be notified by email."
               icon={<Inbox className="h-8 w-8" />}
               testId="fw-funder-empty"
             />
