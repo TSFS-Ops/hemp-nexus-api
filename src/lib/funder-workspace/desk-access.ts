@@ -56,11 +56,19 @@ export function resolveDeskAccess(input: DeskAccessInputs): DeskAccessDecision {
   return "allow";
 }
 
-/** Trade-persona role tokens on user_roles that count as trade membership. */
+/**
+ * Trade-persona role tokens on user_roles that count as trade membership.
+ *
+ * NOTE: `org_admin` and `org_member` are auto-provisioned for every
+ * authenticated user (including funder-only users), so they cannot be
+ * used to infer trade membership — doing so silently disables funder
+ * containment. Only strictly trade-specific roles count here.
+ */
 export const TRADE_PERSONA_ROLES: readonly string[] = [
-  "org_admin",
-  "org_member",
   "buyer",
+  "seller",
+  "trader",
   "auditor",
+  "director",
   "compliance_analyst",
 ] as const;

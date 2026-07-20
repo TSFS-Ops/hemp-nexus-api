@@ -76,7 +76,7 @@ export function FunderOnlyDeskGuard({ children }: { children: ReactNode }) {
         | null;
       setSignals({
         isFunderUser: !!funderRes.data,
-        hasTradeMembership: rolesTrade || !!profile?.org_id,
+        hasTradeMembership: rolesTrade,
         selectedPersona: profile?.selected_persona ?? null,
       });
     })();
