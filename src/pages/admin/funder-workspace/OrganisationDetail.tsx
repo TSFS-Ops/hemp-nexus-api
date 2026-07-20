@@ -217,7 +217,7 @@ function AuditTable({ rows }: { rows: AuditEventRow[] }) {
       <TableBody>
         {rows.map((e) => (
           <TableRow key={e.id}>
-            <TableCell className="text-xs">{new Date(e.created_at).toLocaleString()}</TableCell>
+            <TableCell className="text-xs">{new Date(e.occurred_at).toLocaleString()}</TableCell>
             <TableCell className="font-mono text-xs">{e.action}</TableCell>
             <TableCell className="text-xs">{e.object_type ?? "—"}</TableCell>
             <TableCell className="text-xs">{e.reason_code ?? "—"}</TableCell>
