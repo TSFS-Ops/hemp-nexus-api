@@ -63,7 +63,7 @@ export default function FunderWorkspaceAudit() {
                 <TableBody>
                   {audit.map((e) => (
                     <TableRow key={e.id}>
-                      <TableCell className="text-xs">{new Date(e.created_at).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs">{new Date(e.occurred_at).toLocaleString()}</TableCell>
                       <TableCell className="font-mono text-xs">{e.action}</TableCell>
                       <TableCell className="text-xs">{e.user_id ?? "—"}</TableCell>
                       <TableCell className="text-xs">{e.funder_organisation_id ?? "—"}</TableCell>

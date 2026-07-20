@@ -228,7 +228,7 @@ export interface AuditEventRow {
   new_state: Record<string, unknown> | null;
   reason_code: string | null;
   source_channel: string | null;
-  created_at: string;
+  occurred_at: string;
 }
 
 // ─────────────────────────────────────────────────────────────

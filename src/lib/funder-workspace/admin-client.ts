@@ -173,7 +173,7 @@ export async function listAuditEvents(opts?: {
   objectId?: string;
   limit?: number;
 }): Promise<AuditEventRow[]> {
-  let q = (supabase as any).from(T.audit).select("*").order("created_at", { ascending: false });
+  let q = (supabase as any).from(T.audit).select("*").order("occurred_at", { ascending: false });
   if (opts?.organisationId) q = q.eq("funder_organisation_id", opts.organisationId);
   if (opts?.objectId) q = q.eq("object_id", opts.objectId);
   q = q.limit(opts?.limit ?? 200);
