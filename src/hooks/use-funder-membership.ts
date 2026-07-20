@@ -27,22 +27,10 @@ export function useFunderMembership(): { isFunderUser: boolean; loaded: boolean 
     setState((s) => ({ ...s, loaded: false }));
     (async () => {
       try {
+        // SECURITY DEFINER RPC — bypasses missing table GRANT on p5_batch3_funder_users.
         const { data } = await (supabase as unknown as {
-          from: (t: string) => {
-            select: (c: string) => {
-              eq: (a: string, b: string) => {
-                in: (a: string, b: string[]) => {
-                  maybeSingle: () => Promise<{ data: { id: string } | null }>;
-                };
-              };
-            };
-          };
-        })
-          .from("p5_batch3_funder_users")
-          .select("id")
-          .eq("auth_user_id", user.id)
-          .in("status", ["active", "pending", "invited"])
-          .maybeSingle();
+          rpc: (name: string) => Promise<{ data: string | null; error: unknown }>;
+        }).rpc("fw_current_funder_org_v1");
         if (cancelled) return;
         setState({ isFunderUser: !!data, loaded: true });
       } catch {
