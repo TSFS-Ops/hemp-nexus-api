@@ -192,13 +192,44 @@ export interface GenerateSealedPackResult {
   storage_path: string;
 }
 
+const FRIENDLY_PACK_ERRORS: Record<string, string> = {
+  unauthorized: "Sign in again — your session has expired.",
+  context_denied:
+    "This release cannot be generated right now (platform-admin, active release or consent check failed). Confirm you are signed in as a platform administrator and both counterparties have granted consent.",
+  linkage_required:
+    "No canonical deal is linked to this release. Link a canonical deal before sealing a pack.",
+  invalid_release_id: "This release identifier is invalid.",
+  upload_failed:
+    "The sealed pack could not be uploaded to secure storage. Please retry; if it persists, contact platform support.",
+  seal_failed:
+    "The pack was uploaded but the sealing step failed. The orphan file has been cleaned up — please retry.",
+  method_not_allowed: "Internal error (method not allowed). Please retry.",
+  unhandled:
+    "The pack generator hit an unexpected error. Please retry; if it persists, contact platform support with the release ID.",
+};
+
 export async function generateSealedPack(releaseId: string): Promise<GenerateSealedPackResult> {
-  const { data, error } = await (supabase as any).functions.invoke("funder-pack-generate", {
-    body: { release_id: releaseId },
-  });
-  if (error) throw new Error(error.message ?? "generation failed");
-  if (!data?.ok) throw new Error(data?.detail ?? data?.error ?? "generation failed");
-  return data as GenerateSealedPackResult;
+  const invoke = (supabase as unknown as { functions: { invoke: (name: string, opts: { body: unknown }) => Promise<{ data: unknown; error: unknown }> } }).functions.invoke;
+  const { data, error } = await invoke("funder-pack-generate", { body: { release_id: releaseId } });
+  if (error) {
+    // FunctionsHttpError wraps a Response on `.context` with the real error body.
+    const ctx = (error as { context?: Response }).context;
+    let body: { error?: string; detail?: string } | null = null;
+    try {
+      if (ctx && typeof ctx.clone === "function") body = await ctx.clone().json();
+    } catch { /* ignore */ }
+    const code = body?.error ?? "";
+    const friendly = FRIENDLY_PACK_ERRORS[code];
+    throw new Error(
+      friendly ?? body?.detail ?? body?.error ?? (error as { message?: string }).message ?? "Sealed pack generation failed.",
+    );
+  }
+  const d = data as (GenerateSealedPackResult & { error?: string; detail?: string }) | null;
+  if (!d?.ok) {
+    const code = d?.error ?? "";
+    throw new Error(FRIENDLY_PACK_ERRORS[code] ?? d?.detail ?? d?.error ?? "Sealed pack generation failed.");
+  }
+  return d;
 }
 
 // ─── Batch 6: counters + assignment picker ───────────────────

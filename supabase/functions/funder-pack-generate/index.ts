@@ -483,7 +483,11 @@ Deno.serve(async (req) => {
       });
                    const admin = createClient(url, service, { auth: { persistSession: false } });
 
-      const { data: userInfo, error: userErr } = await userClient.auth.getUser();
+      // Pass the JWT explicitly — without an active session the SDK does not
+      // attach the global Authorization header to /auth/v1/user, which surfaces
+      // as a spurious `unauthorized` from an otherwise-valid caller.
+      const bearer = authHeader.replace(/^Bearer\s+/i, "");
+      const { data: userInfo, error: userErr } = await userClient.auth.getUser(bearer);
                    if (userErr || !userInfo?.user) return json({ error: "unauthorized" }, 401);
                    const generatedByEmail = userInfo.user.email ?? userInfo.user.id;
 
