@@ -91,7 +91,7 @@ export function FunderPersonaContainment({ children }: { children: ReactNode }) 
       setProbe({
         loaded: true,
         isFunderUser: !!funderRes.data,
-        hasTradeMembership: rolesTrade || !!profile?.org_id,
+        hasTradeMembership: rolesTrade,
         selectedPersona: profile?.selected_persona ?? null,
       });
     })();
