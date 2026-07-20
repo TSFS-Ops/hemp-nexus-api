@@ -118,7 +118,7 @@ DROP POLICY IF EXISTS "cw_cases_admin_select" ON public.cw_cases;
 CREATE POLICY "cw_cases_admin_select"
 ON public.cw_cases
 FOR SELECT TO authenticated
-USING (has_role(auth.uid(), 'admin'::app_role));
+USING (has_role(auth.uid(), 'platform_admin'::app_role));
 
 -- ---------------------------------------------------------------------
 -- 2) cw_case_subjects: multi-subject support, one enforced primary
@@ -156,7 +156,7 @@ USING (EXISTS (
   WHERE c.id = cw_case_subjects.case_id
     AND (
       c.org_id IN (SELECT profiles.org_id FROM public.profiles WHERE profiles.id = auth.uid())
-      OR has_role(auth.uid(), 'admin'::app_role)
+      OR has_role(auth.uid(), 'platform_admin'::app_role)
     )
 ));
 
@@ -190,7 +190,7 @@ USING (EXISTS (
   WHERE c.id = cw_case_related_records.case_id
     AND (
       c.org_id IN (SELECT profiles.org_id FROM public.profiles WHERE profiles.id = auth.uid())
-      OR has_role(auth.uid(), 'admin'::app_role)
+      OR has_role(auth.uid(), 'platform_admin'::app_role)
     )
 ));
 
@@ -230,7 +230,7 @@ USING (EXISTS (
   WHERE c.id = cw_case_concerns.case_id
     AND (
       c.org_id IN (SELECT profiles.org_id FROM public.profiles WHERE profiles.id = auth.uid())
-      OR has_role(auth.uid(), 'admin'::app_role)
+      OR has_role(auth.uid(), 'platform_admin'::app_role)
     )
 ));
 
@@ -256,7 +256,7 @@ DROP POLICY IF EXISTS "cw_legacy_exceptions_admin_select" ON public.cw_legacy_mi
 CREATE POLICY "cw_legacy_exceptions_admin_select"
 ON public.cw_legacy_migration_exceptions
 FOR SELECT TO authenticated
-USING (has_role(auth.uid(), 'admin'::app_role));
+USING (has_role(auth.uid(), 'platform_admin'::app_role));
 
 -- ---------------------------------------------------------------------
 -- 6) cw_open_case: transactional, race-safe case opening RPC.
@@ -281,7 +281,7 @@ DECLARE
   v_case_id uuid;
   v_caller_role text := auth.jwt() ->> 'role';
 BEGIN
-  IF NOT (has_role(auth.uid(), 'admin'::app_role) OR v_caller_role = 'service_role') THEN
+  IF NOT (has_role(auth.uid(), 'platform_admin'::app_role) OR v_caller_role = 'service_role') THEN
     RAISE EXCEPTION 'cw.not_authorized'
       USING MESSAGE = 'Only admin or service_role may open compliance cases in this phase';
   END IF;
