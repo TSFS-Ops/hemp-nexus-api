@@ -140,7 +140,7 @@ export async function listMyAuditEvents(opts?: {
   let q = (supabase as any)
     .from(T.audit)
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("occurred_at", { ascending: false });
   if (opts?.objectId) q = q.eq("object_id", opts.objectId);
   q = q.limit(opts?.limit ?? 100);
   const { data, error } = await q;
