@@ -134,12 +134,10 @@ export function FunderRfiPanel({
             explanations relating to this release.
           </p>
         </div>
-        {canCreateRfi(role) && (
+        {mayCreate && (
           <Button
             size="sm"
             onClick={() => setCreating(true)}
-            disabled={!workable}
-            title={workable ? undefined : "Release is not active"}
             data-testid="fw-funder-rfi-create"
           >
             Raise request
