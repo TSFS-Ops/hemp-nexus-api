@@ -314,10 +314,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userId = user.id;
 
     const refresh = () => {
-      if (document.visibilityState === "visible") {
-        fetchRoles(userId);
+      if (document.visibilityState !== "visible") return;
+      // visibilitychange + focus commonly fire back-to-back on the same
+      // tab-return. Throttle so we don't run two identical role queries
+      // and produce two consumer-visible state updates for one interaction.
+      if (Date.now() - lastRoleFetchAtRef.current < ROLE_REFRESH_MIN_INTERVAL_MS) {
+        return;
       }
+      fetchRoles(userId);
     };
+
 
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener("focus", refresh);
