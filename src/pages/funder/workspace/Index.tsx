@@ -197,15 +197,35 @@ function StatCard({
   label,
   value,
   loading,
+  hint,
 }: {
   label: string;
   value: number;
   loading?: boolean;
+  hint?: string;
 }) {
   return (
     <Card>
       <CardContent className="pt-4">
-        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <span>{label}</span>
+          {hint && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`${label} — what does this count?`}
+                  className="text-muted-foreground/70 hover:text-foreground"
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs leading-snug">
+                {hint}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
         <div className="text-2xl font-semibold mt-1 tabular-nums">
           {loading ? <span className="text-muted-foreground">—</span> : value}
         </div>
