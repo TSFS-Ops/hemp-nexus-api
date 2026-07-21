@@ -209,8 +209,14 @@ const FRIENDLY_PACK_ERRORS: Record<string, string> = {
 };
 
 export async function generateSealedPack(releaseId: string): Promise<GenerateSealedPackResult> {
-  const invoke = (supabase as unknown as { functions: { invoke: (name: string, opts: { body: unknown }) => Promise<{ data: unknown; error: unknown }> } }).functions.invoke;
-  const { data, error } = await invoke("funder-pack-generate", { body: { release_id: releaseId } });
+  // NOTE: do NOT destructure `supabase.functions.invoke` — the FunctionsClient
+  // method reads `this.region` internally and throws
+  // "Cannot read properties of undefined (reading 'region')" when called
+  // without its owning object. Always call it as a method.
+  const { data, error } = await supabase.functions.invoke("funder-pack-generate", {
+    body: { release_id: releaseId },
+  });
+
   if (error) {
     // FunctionsHttpError wraps a Response on `.context` with the real error body.
     const ctx = (error as { context?: Response }).context;
