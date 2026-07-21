@@ -58,6 +58,7 @@ import {
   AdminRfiPanel,
   AdminSharedCommentsPanel,
 } from "./components/AdminWorkflowPanels";
+import { EditReleasePermissionsButton } from "./components/EditReleasePermissionsButton";
 
 
 
