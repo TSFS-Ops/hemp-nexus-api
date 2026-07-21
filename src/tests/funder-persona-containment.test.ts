@@ -109,9 +109,18 @@ describe("resolveFunderContainment", () => {
       }
     });
 
-    it("allows auth, unsubscribe, status, trust, root, marketing", () => {
-      for (const p of ["/", "/auth", "/reset-password", "/unsubscribe", "/status", "/trust", "/products/trade-desk", "/solutions/traders", "/pricing"]) {
+    it("allows only auth/utility routes outside the funder shell", () => {
+      for (const p of ["/auth", "/auth/callback", "/reset-password", "/unsubscribe", "/status"]) {
         expect(resolveFunderContainment(p, funderOnly).kind).toBe("allow");
+      }
+    });
+
+    it("redirects the root, marketing, legal and any unknown path (default-deny)", () => {
+      const denied = ["/", "/trust", "/products/trade-desk", "/solutions/traders", "/pricing", "/some/unknown/marketing", "/legal/terms"];
+      for (const p of denied) {
+        const d = resolveFunderContainment(p, funderOnly);
+        expect(d.kind, `expected redirect for ${p}`).toBe("redirect");
+        if (d.kind === "redirect") expect(d.to).toBe("/funder/workspace");
       }
     });
   });
@@ -145,9 +154,6 @@ describe("resolveFunderContainment", () => {
     expect(resolveFunderContainment("/funder/workspace", funderOnly).kind).toBe("allow");
   });
 
-  it("does not redirect for marketing/legal paths that aren't in the denylist", () => {
-    expect(resolveFunderContainment("/some/unknown/marketing", funderOnly).kind).toBe("allow");
-  });
 });
 
 describe("isFunderOnly", () => {
