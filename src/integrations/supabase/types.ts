@@ -25569,6 +25569,19 @@ export type Database = {
           seller_org_name: string
         }[]
       }
+      fw_admin_update_release_permissions_v1: {
+        Args: {
+          p_can_download_compiled_pack: boolean
+          p_can_download_raw_documents: boolean
+          p_can_view_evidence_room: boolean
+          p_can_view_evidence_summary: boolean
+          p_can_view_raw_documents: boolean
+          p_can_view_unmasked_sensitive_details: boolean
+          p_reason: string
+          p_release_id: string
+        }
+        Returns: Json
+      }
       fw_audit: {
         Args: {
           p_action: string
