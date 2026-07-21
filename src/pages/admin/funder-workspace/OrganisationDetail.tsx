@@ -152,12 +152,60 @@ export default function FunderWorkspaceOrganisationDetail() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Funder users</CardTitle>
+              <CardTitle className="text-base">Funder users ({users.length})</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Funder team self-service management is not available in this batch. Users are managed via the existing P-5 Batch 3 admin console.
+            <CardContent>
+              {users.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No users provisioned for this organisation yet.</p>
+              ) : (
+                <Table data-testid="fw-admin-org-users">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Invited</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((u) => {
+                      const canResend = u.status === "invited";
+                      return (
+                        <TableRow key={u.id}>
+                          <TableCell className="text-xs font-mono">{u.email}</TableCell>
+                          <TableCell className="text-sm">{u.display_name ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{u.role}</TableCell>
+                          <TableCell>
+                            <Badge variant={u.status === "active" ? "default" : u.status === "invited" ? "outline" : "secondary"}>
+                              {u.status === "invited" ? "Pending invitation" : u.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {u.invited_at ? new Date(u.invited_at).toLocaleDateString() : "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!canResend || resending === u.id}
+                              onClick={() => handleResend(u.id, u.email)}
+                              title={canResend ? "Resend invitation email" : "Only users still pending an invitation can be resent"}
+                              data-testid={`fw-admin-resend-invite-${u.id}`}
+                            >
+                              {resending === u.id ? "Resending…" : "Resend invitation"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
+
 
           <Card>
             <CardHeader>
