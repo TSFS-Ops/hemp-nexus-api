@@ -699,6 +699,7 @@ function App() {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 </PersonaShellRouter>
+                </FunderPersonaGuard>
                 </Suspense>
               </RouteErrorBoundary>
               <Sonner />
