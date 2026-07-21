@@ -66,10 +66,8 @@ function DashboardBody({ orgName }: { orgName: string }) {
   }, []);
 
   const now = Date.now();
-  const active = (rows ?? []).filter((r) => r.release_status === "active");
-  const expiringSoon = active.filter(
-    (r) => r.expires_at && new Date(r.expires_at).getTime() - now < EXPIRING_SOON_MS,
-  );
+  const metrics = computeReleaseMetrics(rows ?? [], now);
+
 
   if (err) {
     return (
