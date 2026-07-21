@@ -167,6 +167,9 @@ export async function requestPackDownload(
   );
   if (error) throw new Error(error.message ?? "download not available");
   if (!data?.ok) throw new Error(data?.error ?? "download not available");
+  if (typeof data.signed_url !== "string" || data.signed_url.length === 0) {
+    throw new Error("Download link was empty. Please try again.");
+  }
   return data as RequestPackDownloadResult;
 }
 
