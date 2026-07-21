@@ -37,44 +37,40 @@ export interface ContainmentSignals {
 }
 
 /**
- * Routes a funder-only user is permitted to visit while authenticated.
- * Everything else redirects to /funder/workspace.
+ * Routes an authenticated funder-only user is permitted to visit.
  *
- * Rationale:
- *   - `/funder/*` is their canonical shell.
- *   - `/auth` and `/reset-password` support sign-in / re-auth.
- *   - `/unsubscribe` and `/status` are lightweight utility pages that
- *     do not expose authenticated application data.
- *   - `/` is the public marketing landing (no authenticated shell).
- *   - Product / solutions / legal marketing pages are static.
+ * Client policy is strict: funders belong entirely inside the dedicated
+ * Funder Workspace and must not see or access the wider Trade Desk or
+ * any other Izenzo application shell (including the public marketing
+ * surface, which advertises Trade Desk features and CTAs). We therefore
+ * operate on a default-DENY basis for any authenticated funder-only
+ * user — only the narrow set below is permitted, everything else
+ * redirects to /funder/workspace.
  *
- * Anything else — /desk, /dashboard, /admin, /hq, /registry,
- * /governance, /compliance, /marketplace, /discovery, /matches,
- * /support, /docs, /welcome, /developer(s), /trade, /billing — is a
- * platform shell that must not render for a funder-only user.
+ * Permitted:
+ *   - /funder/*        — canonical Funder Workspace shell.
+ *   - /auth, /auth/*   — sign-in / callback / re-auth.
+ *   - /reset-password  — password reset flow.
+ *   - /unsubscribe     — email preference utility (no app data).
+ *   - /status          — public status page (no app data).
  */
 export const FUNDER_ALLOWED_EXACT: readonly string[] = [
-  "/",
   "/auth",
   "/reset-password",
   "/unsubscribe",
   "/status",
-  "/trust",
-  "/landing",
 ] as const;
 
 export const FUNDER_ALLOWED_PREFIXES: readonly string[] = [
   "/funder/",
   "/auth/",
-  "/products/",
-  "/solutions/",
-  "/pricing",
 ] as const;
 
 /**
- * Authenticated application prefixes that a funder-only user must never
- * reach. Explicit list so we do not accidentally rely on marketing
- * pages to catch things.
+ * Explicit denylist retained for documentation / test invariants.
+ * The effective policy is default-deny, so this list is not consulted
+ * to make the decision — it is kept so contract tests can assert that
+ * every high-risk platform shell is unreachable.
  */
 export const FUNDER_DENY_PREFIXES: readonly string[] = [
   "/desk",
@@ -110,7 +106,6 @@ function pathMatchesPrefix(pathname: string, prefixes: readonly string[]): boole
 export function isFunderOnly(signals: ContainmentSignals): boolean {
   if (!signals.isFunderUser) return false;
   if (signals.hasTradeMembership) {
-    // Dual-role user — funder persona only if explicitly selected.
     return (signals.selectedPersona || "").toLowerCase() === "funder";
   }
   return true;
@@ -120,38 +115,24 @@ export function isFunderOnly(signals: ContainmentSignals): boolean {
  * Global containment decision. Returns `allow` when the route may
  * render, `loading` when signals are still resolving (render neutral
  * skeleton — never the destination shell), and `redirect` otherwise.
+ *
+ * Policy for authenticated funder-only users is default-DENY.
  */
 export function resolveFunderContainment(
   pathname: string,
   signals: ContainmentSignals,
 ): ContainmentDecision {
-  // Unauthenticated users: defer to RequireAuth / public routing.
   if (!signals.isAuthenticated) return { kind: "allow" };
-  // Platform admins are never contained.
   if (signals.isPlatformAdmin) return { kind: "allow" };
-
-  // Non-funder users pass through untouched (trade-only, admin-only, etc.).
   if (!signals.isFunderUser) return { kind: "allow" };
-
-  // For any user who *might* be contained, wait for signals before
-  // deciding — do NOT flash a denied shell.
   if (signals.loading) return { kind: "loading" };
-
   if (!isFunderOnly(signals)) return { kind: "allow" };
 
-  // Funder-only user. Whitelist first, then denylist.
   if (FUNDER_ALLOWED_EXACT.includes(pathname as (typeof FUNDER_ALLOWED_EXACT)[number])) {
     return { kind: "allow" };
   }
   if (pathMatchesPrefix(pathname, FUNDER_ALLOWED_PREFIXES)) {
     return { kind: "allow" };
   }
-  if (pathMatchesPrefix(pathname, FUNDER_DENY_PREFIXES)) {
-    return { kind: "redirect", to: "/funder/workspace" };
-  }
-
-  // Any other unknown authenticated application path also redirects.
-  // Unknown static/marketing paths (e.g. /trust variants) are covered
-  // by FUNDER_ALLOWED_EXACT / marketing prefixes above.
-  return { kind: "allow" };
+  return { kind: "redirect", to: "/funder/workspace" };
 }
