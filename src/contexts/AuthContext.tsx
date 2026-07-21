@@ -80,12 +80,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const previousRolesRef = useRef<AppRole[] | null>(null);
   const previousOrgIdRef = useRef<string | null | undefined>(undefined);
+  // Throttle for background role refreshes (visibility/focus/health check).
+  // Without this, quickly alternating focus/visibility events fire two role
+  // fetches in a row and each one produces a new `roles` array reference,
+  // cascading re-renders through every `useAuth()` consumer and making the
+  // whole page look like it "refreshed" when the tab regains focus.
+  const lastRoleFetchAtRef = useRef<number>(0);
+  const ROLE_REFRESH_MIN_INTERVAL_MS = 30_000;
 
   const invalidateRoleScopedCaches = useCallback(() => {
     // Force-refetch anything that depends on the caller's role/org context.
     // Backend remains the final authority - this only keeps the UI honest.
     queryClient.invalidateQueries();
   }, []);
+
 
   const fetchRoles = useCallback(async (userId: string) => {
     try {
@@ -136,11 +144,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       previousOrgIdRef.current = currentOrgId;
 
-      setRoles(userRoles);
+      // Only publish a new roles array reference when the set actually
+      // changed. Otherwise every visibility/focus refresh would produce a
+      // new array identity and re-render every `useAuth()` consumer.
+      const sameRoles =
+        prev !== null &&
+        prev.length === userRoles.length &&
+        prev.every((r) => userRoles.includes(r));
+      if (!sameRoles) {
+        setRoles(userRoles);
+      }
+      lastRoleFetchAtRef.current = Date.now();
 
       if (rolesChanged || orgChanged) {
         invalidateRoleScopedCaches();
       }
+
 
       if (currentOrgId) {
         setSentryUser(userId, currentOrgId, userRoles);
@@ -181,8 +200,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      // Preserve object identity when the user id hasn't changed. Supabase
+      // fires TOKEN_REFRESHED whenever the tab regains focus and hands us a
+      // brand new session/user object each time. If we blindly setSession /
+      // setUser, every `useAuth()` consumer re-renders and any effect keyed
+      // on `user` (rather than `user.id`) re-runs - which is what makes the
+      // page look like it "refreshes" when you switch tabs and come back.
+      setSession((prev) => {
+        if (prev && session && prev.access_token === session.access_token) {
+          return prev;
+        }
+        return session;
+      });
+      setUser((prev) => {
+        const next = session?.user ?? null;
+        if (prev && next && prev.id === next.id) return prev;
+        return next;
+      });
       
       if (event === "SIGNED_OUT" || (event === "TOKEN_REFRESHED" && !session)) {
         const wasExplicit = explicitSignOutRef.current;
@@ -215,24 +249,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (session?.user) {
+        const isFirstUser = !hadUserRef.current;
         hadUserRef.current = true;
-        // A new authenticated user appeared - the next role fetch is the
-        // authoritative one. Mark roles as not-yet-loaded so RequireAuth
-        // shows the loader instead of redirecting on stale roles=[].
-        setRolesLoaded(false);
+        // Only reset rolesLoaded when a *different* user actually appears
+        // (first sign-in, or a user swap). Token refreshes on the same user
+        // must NOT flip rolesLoaded back to false - doing so causes every
+        // route guard listening to `rolesLoaded` to render its loader for a
+        // beat, which is what the user perceives as a page "refresh" when
+        // returning to the tab.
+        if (isFirstUser) {
+          setRolesLoaded(false);
+        }
         // Only verify profile on sign-in/sign-up, not every token refresh
         const needsProfileCheck = event === "SIGNED_IN" || event === "INITIAL_SESSION";
         setTimeout(async () => {
           if (needsProfileCheck) {
             await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
           }
-          fetchRoles(session.user.id);
+          // On silent token refreshes, skip the role re-fetch entirely -
+          // the visibility/focus listener + 60s health check already cover
+          // mid-session role changes and are throttled. Refetching here
+          // means every tab focus produces a duplicate roles query.
+          if (event !== "TOKEN_REFRESHED" && event !== "USER_UPDATED") {
+            fetchRoles(session.user.id);
+          }
         }, 0);
       } else {
         setRoles([]);
         setRolesLoaded(true);
       }
     });
+
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
@@ -267,10 +314,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userId = user.id;
 
     const refresh = () => {
-      if (document.visibilityState === "visible") {
-        fetchRoles(userId);
+      if (document.visibilityState !== "visible") return;
+      // visibilitychange + focus commonly fire back-to-back on the same
+      // tab-return. Throttle so we don't run two identical role queries
+      // and produce two consumer-visible state updates for one interaction.
+      if (Date.now() - lastRoleFetchAtRef.current < ROLE_REFRESH_MIN_INTERVAL_MS) {
+        return;
       }
+      fetchRoles(userId);
     };
+
 
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener("focus", refresh);
