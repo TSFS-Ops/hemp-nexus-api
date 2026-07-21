@@ -208,13 +208,30 @@ const FRIENDLY_PACK_ERRORS: Record<string, string> = {
     "The pack generator hit an unexpected error. Please retry; if it persists, contact platform support with the release ID.",
 };
 
-export async function generateSealedPack(releaseId: string): Promise<GenerateSealedPackResult> {
+export interface GenerateSealedPackOptions {
+  /** When true, supersede the current sealed pack. Requires supersedeReason. */
+  supersede?: boolean;
+  /** Written reason. Required when supersede=true (server enforces). */
+  supersedeReason?: string;
+}
+
+export async function generateSealedPack(
+  releaseId: string,
+  options: GenerateSealedPackOptions = {},
+): Promise<GenerateSealedPackResult> {
+  if (options.supersede && !options.supersedeReason?.trim()) {
+    throw new Error("A written reason is required to supersede a sealed pack.");
+  }
   // NOTE: do NOT destructure `supabase.functions.invoke` — the FunctionsClient
   // method reads `this.region` internally and throws
   // "Cannot read properties of undefined (reading 'region')" when called
   // without its owning object. Always call it as a method.
   const { data, error } = await supabase.functions.invoke("funder-pack-generate", {
-    body: { release_id: releaseId },
+    body: {
+      release_id: releaseId,
+      supersede: !!options.supersede,
+      supersede_reason: options.supersedeReason ?? null,
+    },
   });
 
   if (error) {
@@ -236,6 +253,22 @@ export async function generateSealedPack(releaseId: string): Promise<GenerateSea
     throw new Error(FRIENDLY_PACK_ERRORS[code] ?? d?.detail ?? d?.error ?? "Sealed pack generation failed.");
   }
   return d;
+}
+
+/**
+ * Platform-Admin-only: refresh the invited-at timestamp on a still-invited
+ * funder user and emit a `funder_user.invite_resent` audit event.
+ * Server rejects the call for users whose status is not 'invited'.
+ */
+export async function resendFunderInvite(
+  userId: string,
+): Promise<{ user_id: string; email: string; funder_organisation_id: string; resent_at: string }> {
+  const client = supabase as unknown as {
+    rpc: (n: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
+  const { data, error } = await client.rpc("p5b3_admin_resend_funder_invite_v1", { p_user_id: userId });
+  if (error) throw new Error(error.message);
+  return data as { user_id: string; email: string; funder_organisation_id: string; resent_at: string };
 }
 
 // ─── Batch 6: counters + assignment picker ───────────────────
