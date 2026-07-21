@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Inbox } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Inbox, Info } from "lucide-react";
 import { FunderWorkspaceShell } from "./components/FunderWorkspaceShell";
 import {
   fetchFunderCounters,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/funder-workspace/funder-client";
 import type { DealReleaseRow } from "@/lib/funder-workspace/types";
 import { effectiveReleaseStatus } from "@/lib/funder-workspace/release-state";
+import { computeReleaseMetrics } from "@/lib/funder-workspace/metrics";
 import {
   EmptyState,
   ExpiryIndicator,
@@ -30,8 +32,6 @@ import {
   SectionHeading,
   StatusBadge,
 } from "@/lib/funder-workspace/ui";
-
-const EXPIRING_SOON_MS = 14 * 24 * 60 * 60 * 1000;
 
 export default function FunderWorkspaceIndex() {
   return (
@@ -66,10 +66,8 @@ function DashboardBody({ orgName }: { orgName: string }) {
   }, []);
 
   const now = Date.now();
-  const active = (rows ?? []).filter((r) => r.release_status === "active");
-  const expiringSoon = active.filter(
-    (r) => r.expires_at && new Date(r.expires_at).getTime() - now < EXPIRING_SOON_MS,
-  );
+  const metrics = computeReleaseMetrics(rows ?? [], now);
+
 
   if (err) {
     return (
@@ -81,30 +79,47 @@ function DashboardBody({ orgName }: { orgName: string }) {
 
   return (
     <div className="space-y-4" data-testid="fw-funder-dashboard">
+      <TooltipProvider>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard
-          label="Active deals"
-          value={counters?.active_deals ?? active.length}
+          label="Active releases"
+          value={counters?.active_deals ?? metrics.active}
           loading={rows === null && counters === null}
+          hint="Releases assigned to your organisation whose access is currently usable — not revoked, not expired. Releases within 14 days of expiry are still counted here (they are also shown in ‘Expiring in 14 days’)."
         />
         <StatCard
           label="Expiring in 14 days"
-          value={counters?.expiring_soon ?? expiringSoon.length}
+          value={counters?.expiring_soon ?? metrics.expiring_soon}
           loading={rows === null && counters === null}
+          hint="Warning subset of Active releases. Excludes already-expired and revoked releases. These are also included in ‘Active releases’."
         />
         <StatCard
-          label="Sealed packs"
+          label="Sealed pack versions"
           value={counters?.packs_available ?? 0}
           loading={counters === null}
+          hint="Total sealed pack VERSIONS across your assigned releases. A deal with v1 and v2 counts as 2. Includes packs on revoked releases (revocation blocks download but preserves the sealed record for audit)."
         />
-        <StatCard label="Open RFIs" value={counters?.open_rfis ?? 0} loading={counters === null} />
-        <StatCard label="Answered RFIs" value={counters?.answered_rfis ?? 0} loading={counters === null} />
         <StatCard
-          label="Decisions recorded"
+          label="Open RFIs"
+          value={counters?.open_rfis ?? 0}
+          loading={counters === null}
+          hint="RFIs with status open, assigned or in-progress across all your releases. Includes RFIs on releases later revoked (server cannot post new messages once a release is inactive)."
+        />
+        <StatCard
+          label="Answered RFIs"
+          value={counters?.answered_rfis ?? 0}
+          loading={counters === null}
+          hint="RFIs whose current status is ‘answered’. Once closed or withdrawn they no longer count here."
+        />
+        <StatCard
+          label="Deals with a current decision"
           value={counters?.decisions_recorded ?? 0}
           loading={counters === null}
+          hint="Counts the current (latest) decision per release. Superseded decision versions are not double-counted."
         />
       </div>
+      </TooltipProvider>
+
 
       <Card>
         <CardHeader>
@@ -182,15 +197,35 @@ function StatCard({
   label,
   value,
   loading,
+  hint,
 }: {
   label: string;
   value: number;
   loading?: boolean;
+  hint?: string;
 }) {
   return (
     <Card>
       <CardContent className="pt-4">
-        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <span>{label}</span>
+          {hint && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`${label} — what does this count?`}
+                  className="text-muted-foreground/70 hover:text-foreground"
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs leading-snug">
+                {hint}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
         <div className="text-2xl font-semibold mt-1 tabular-nums">
           {loading ? <span className="text-muted-foreground">—</span> : value}
         </div>
