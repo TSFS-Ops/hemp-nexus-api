@@ -6,13 +6,14 @@
 -- existing org-scoped and (now-dormant, see note below) admin SELECT
 -- policies from Phase 1 -- nothing is dropped, replaced, or narrowed.
 --
--- Note on the dormant 'admin' policies: Phase 1's cw_cases_admin_select
--- and cw_legacy_exceptions_admin_select check has_role(..., 'admin').
--- A historical migration (20260213123630) moved every user_roles row
--- from 'admin' to 'platform_admin', so those two policies now match
--- nobody in practice. This migration repairs that by ADDING working
--- platform_admin/compliance-staff policies alongside them; it does not
--- touch the existing (harmless, if inert) 'admin' policies.
+-- Note on the dormant legacy-admin policies: Phase 1's cw_cases_admin_select
+-- and cw_legacy_exceptions_admin_select gate on the legacy app_role value
+-- admin (via the has_role helper). A historical migration (20260213123630)
+-- moved every user_roles row from that legacy value to platform_admin, so
+-- those two policies now match nobody in practice. This migration repairs
+-- that by ADDING working platform_admin/compliance-staff policies
+-- alongside them; it does not touch the existing (harmless, if inert)
+-- legacy policies.
 --
 -- Enforcement model:
 -- - RLS SELECT policies (this file) are the authoritative tenant-
@@ -49,7 +50,7 @@ CREATE TABLE IF NOT EXISTS public.cw_auditor_export_grants (
     granted_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     granted_at timestamptz NOT NULL DEFAULT now(),
     expires_at timestamptz
-  );
+    );
 
 CREATE INDEX IF NOT EXISTS idx_cw_auditor_export_grants_auditor ON public.cw_auditor_export_grants(auditor_user_id);
 
@@ -68,14 +69,14 @@ CREATE OR REPLACE FUNCTION public.cw_can_export_case_data(p_user_id uuid)
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
-  SELECT public.cw_is_platform_admin(p_user_id)
-      OR public.cw_is_compliance_decision_maker(p_user_id)
-      OR EXISTS (
-          SELECT 1 FROM public.cw_auditor_export_grants g
-          WHERE g.auditor_user_id = p_user_id
-            AND public.cw_is_auditor(p_user_id)
-            AND (g.expires_at IS NULL OR g.expires_at > now())
-        );
+SELECT public.cw_is_platform_admin(p_user_id)
+OR public.cw_is_compliance_decision_maker(p_user_id)
+OR EXISTS (
+    SELECT 1 FROM public.cw_auditor_export_grants g
+    WHERE g.auditor_user_id = p_user_id
+    AND public.cw_is_auditor(p_user_id)
+    AND (g.expires_at IS NULL OR g.expires_at > now())
+    );
 $$;
 
 REVOKE ALL ON FUNCTION public.cw_can_export_case_data(uuid) FROM PUBLIC;
@@ -99,7 +100,7 @@ USING (
     OR public.cw_is_auditor(auth.uid())
     OR public.cw_is_compliance_analyst(auth.uid())
     OR public.cw_is_compliance_decision_maker(auth.uid())
-  );
+    );
 
 DROP POLICY IF EXISTS "cw_legacy_exceptions_platform_admin_select" ON public.cw_legacy_migration_exceptions;
 CREATE POLICY "cw_legacy_exceptions_platform_admin_select"
@@ -121,7 +122,7 @@ FOR INSERT TO authenticated
 WITH CHECK (
     public.cw_can_assign_case(auth.uid())
     OR public.cw_is_compliance_decision_maker(auth.uid())
-  );
+    );
 
 DROP POLICY IF EXISTS "cw_cases_compliance_update" ON public.cw_cases;
 CREATE POLICY "cw_cases_compliance_update"
@@ -130,11 +131,11 @@ FOR UPDATE TO authenticated
 USING (
     public.cw_can_assign_case(auth.uid())
     OR public.cw_is_compliance_decision_maker(auth.uid())
-  )
+    )
 WITH CHECK (
     public.cw_can_assign_case(auth.uid())
     OR public.cw_is_compliance_decision_maker(auth.uid())
-  );
+    );
 
 -- ---------------------------------------------------------------------
 -- 4) Case-mutation guard trigger: encodes "may approve, may not rewrite
@@ -151,31 +152,31 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_uid uuid := auth.uid();
-  v_decision_changed boolean;
-  v_assignment_changed boolean;
+v_uid uuid := auth.uid();
+v_decision_changed boolean;
+v_assignment_changed boolean;
 BEGIN
-  v_decision_changed := (NEW.status IS DISTINCT FROM OLD.status)
-    OR (NEW.decision_notes IS DISTINCT FROM OLD.decision_notes)
-    OR (NEW.decided_by IS DISTINCT FROM OLD.decided_by)
-    OR (NEW.decided_at IS DISTINCT FROM OLD.decided_at);
+v_decision_changed := (NEW.status IS DISTINCT FROM OLD.status)
+OR (NEW.decision_notes IS DISTINCT FROM OLD.decision_notes)
+OR (NEW.decided_by IS DISTINCT FROM OLD.decided_by)
+OR (NEW.decided_at IS DISTINCT FROM OLD.decided_at);
 
-  v_assignment_changed := (NEW.owner_user_id IS DISTINCT FROM OLD.owner_user_id)
-    OR (NEW.assigned_at IS DISTINCT FROM OLD.assigned_at);
+v_assignment_changed := (NEW.owner_user_id IS DISTINCT FROM OLD.owner_user_id)
+OR (NEW.assigned_at IS DISTINCT FROM OLD.assigned_at);
 
-  IF OLD.status IN ('approved','conditionally_approved','rejected','closed') AND v_decision_changed THEN
-    RAISE EXCEPTION 'cw.history_immutable: cannot amend a decided/closed compliance case; open a new case instead';
-  END IF;
+IF OLD.status IN ('approved','conditionally_approved','rejected','closed') AND v_decision_changed THEN
+RAISE EXCEPTION 'cw.history_immutable: cannot amend a decided/closed compliance case; open a new case instead';
+END IF;
 
-  IF v_decision_changed AND v_uid IS NOT NULL AND NOT public.cw_can_decide_case(v_uid) THEN
-    RAISE EXCEPTION 'cw.decision_requires_decision_maker: only a compliance decision-making role may change case status/decision fields';
-  END IF;
+IF v_decision_changed AND v_uid IS NOT NULL AND NOT public.cw_can_decide_case(v_uid) THEN
+RAISE EXCEPTION 'cw.decision_requires_decision_maker: only a compliance decision-making role may change case status/decision fields';
+END IF;
 
-  IF v_assignment_changed AND NOT v_decision_changed AND v_uid IS NOT NULL AND NOT public.cw_can_assign_case(v_uid) THEN
-    RAISE EXCEPTION 'cw.assignment_requires_assign_capability: only platform_admin or compliance_ops_lead may reassign a case';
-  END IF;
+IF v_assignment_changed AND NOT v_decision_changed AND v_uid IS NOT NULL AND NOT public.cw_can_assign_case(v_uid) THEN
+RAISE EXCEPTION 'cw.assignment_requires_assign_capability: only platform_admin or compliance_ops_lead may reassign a case';
+END IF;
 
-  RETURN NEW;
+RETURN NEW;
 END;
 $$;
 
@@ -198,7 +199,7 @@ WITH CHECK (
     public.cw_is_compliance_analyst(auth.uid())
     OR public.cw_is_compliance_decision_maker(auth.uid())
     OR public.cw_is_platform_admin(auth.uid())
-  );
+    );
 
 DROP POLICY IF EXISTS "cw_case_concerns_compliance_update" ON public.cw_case_concerns;
 CREATE POLICY "cw_case_concerns_compliance_update"
@@ -208,12 +209,12 @@ USING (
     public.cw_is_compliance_analyst(auth.uid())
     OR public.cw_is_compliance_decision_maker(auth.uid())
     OR public.cw_is_platform_admin(auth.uid())
-  )
+    )
 WITH CHECK (
     public.cw_is_compliance_analyst(auth.uid())
     OR public.cw_is_compliance_decision_maker(auth.uid())
     OR public.cw_is_platform_admin(auth.uid())
-  );
+    );
 
 -- ---------------------------------------------------------------------
 -- 6) Relax cw_open_case's interim "admin/service_role only" gate (from
@@ -231,43 +232,43 @@ CREATE OR REPLACE FUNCTION public.cw_open_case(
     p_primary_subject_ref_id uuid,
     p_source_trigger text DEFAULT NULL,
     p_priority text DEFAULT 'normal'
-  )
+    )
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_case_id uuid;
-  v_caller_role text := auth.jwt() ->> 'role';
+v_case_id uuid;
+v_caller_role text := auth.jwt() ->> 'role';
 BEGIN
-  IF NOT (
-      v_caller_role = 'service_role'
-      OR public.cw_can_assign_case(auth.uid())
-      OR public.cw_is_compliance_decision_maker(auth.uid())
+IF NOT (
+    v_caller_role = 'service_role'
+    OR public.cw_can_assign_case(auth.uid())
+    OR public.cw_is_compliance_decision_maker(auth.uid())
     ) THEN
-    RAISE EXCEPTION 'cw.not_authorized'
-      USING MESSAGE = 'Only platform_admin, compliance_ops_lead, a compliance decision-making role, or service_role may open compliance cases';
-  END IF;
+RAISE EXCEPTION 'cw.not_authorized'
+USING MESSAGE = 'Only platform_admin, compliance_ops_lead, a compliance decision-making role, or service_role may open compliance cases';
+END IF;
 
-  BEGIN
-    INSERT INTO public.cw_cases (
-          org_id, case_type, priority, primary_subject_kind, primary_subject_ref_id,
-          source_trigger, created_by, updated_by
-        ) VALUES (
-          p_org_id, p_case_type, p_priority, p_primary_subject_kind, p_primary_subject_ref_id,
-          p_source_trigger, auth.uid(), auth.uid()
-        )
-    RETURNING id INTO v_case_id;
-  EXCEPTION WHEN unique_violation THEN
-    RAISE EXCEPTION 'cw.active_case_exists'
-      USING MESSAGE = 'An active case already exists for this subject and case type';
-  END;
+BEGIN
+INSERT INTO public.cw_cases (
+    org_id, case_type, priority, primary_subject_kind, primary_subject_ref_id,
+    source_trigger, created_by, updated_by
+    ) VALUES (
+    p_org_id, p_case_type, p_priority, p_primary_subject_kind, p_primary_subject_ref_id,
+    p_source_trigger, auth.uid(), auth.uid()
+    )
+RETURNING id INTO v_case_id;
+EXCEPTION WHEN unique_violation THEN
+RAISE EXCEPTION 'cw.active_case_exists'
+USING MESSAGE = 'An active case already exists for this subject and case type';
+END;
 
-  INSERT INTO public.cw_case_subjects (case_id, subject_kind, subject_ref_id, is_primary)
-  VALUES (v_case_id, p_primary_subject_kind, p_primary_subject_ref_id, true);
+INSERT INTO public.cw_case_subjects (case_id, subject_kind, subject_ref_id, is_primary)
+VALUES (v_case_id, p_primary_subject_kind, p_primary_subject_ref_id, true);
 
-  RETURN v_case_id;
+RETURN v_case_id;
 END;
 $$;
 
