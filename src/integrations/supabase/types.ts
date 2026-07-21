@@ -6493,6 +6493,7 @@ export type Database = {
           generated_at: string | null
           generated_by: string | null
           id: string
+          is_current: boolean
           manifest_sha256: string | null
           pack_id: string
           release_id: string
@@ -6500,6 +6501,9 @@ export type Database = {
           status: string
           storage_bucket: string | null
           storage_path: string | null
+          superseded_at: string | null
+          superseded_by: string | null
+          supersession_reason: string | null
           updated_at: string
           version: number
           watermark_template: string | null
@@ -6511,6 +6515,7 @@ export type Database = {
           generated_at?: string | null
           generated_by?: string | null
           id?: string
+          is_current?: boolean
           manifest_sha256?: string | null
           pack_id?: string
           release_id: string
@@ -6518,6 +6523,9 @@ export type Database = {
           status?: string
           storage_bucket?: string | null
           storage_path?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
+          supersession_reason?: string | null
           updated_at?: string
           version: number
           watermark_template?: string | null
@@ -6529,6 +6537,7 @@ export type Database = {
           generated_at?: string | null
           generated_by?: string | null
           id?: string
+          is_current?: boolean
           manifest_sha256?: string | null
           pack_id?: string
           release_id?: string
@@ -6536,6 +6545,9 @@ export type Database = {
           status?: string
           storage_bucket?: string | null
           storage_path?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
+          supersession_reason?: string | null
           updated_at?: string
           version?: number
           watermark_template?: string | null
@@ -6546,6 +6558,13 @@ export type Database = {
             columns: ["release_id"]
             isOneToOne: false
             referencedRelation: "funder_deal_releases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_pack_versions_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "funder_pack_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -25470,6 +25489,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      fw_admin_check_pilot_fixtures_v1: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: string
+          label: string
+          status: string
+        }[]
+      }
       fw_admin_funder_pack_content_v1: {
         Args: { p_release_id: string }
         Returns: Json
@@ -25544,6 +25572,8 @@ export type Database = {
           p_release_id: string
           p_storage_bucket: string
           p_storage_path: string
+          p_supersede?: boolean
+          p_supersede_reason?: string
           p_watermark_template: string
         }
         Returns: string
@@ -25559,6 +25589,19 @@ export type Database = {
           match_id: string
           seller_org_name: string
         }[]
+      }
+      fw_admin_update_release_permissions_v1: {
+        Args: {
+          p_can_download_compiled_pack: boolean
+          p_can_download_raw_documents: boolean
+          p_can_view_evidence_room: boolean
+          p_can_view_evidence_summary: boolean
+          p_can_view_raw_documents: boolean
+          p_can_view_unmasked_sensitive_details: boolean
+          p_reason: string
+          p_release_id: string
+        }
+        Returns: Json
       }
       fw_audit: {
         Args: {
@@ -26663,6 +26706,10 @@ export type Database = {
           p_release_reason: string
         }
         Returns: undefined
+      }
+      p5b3_admin_resend_funder_invite_v1: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       p5b3_admin_review_outcome_v1: {
         Args: { p_outcome_id: string; p_reason: string; p_status: string }
