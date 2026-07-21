@@ -196,13 +196,16 @@ describe("Funder Workspace Batch 3 — release detail hides access", () => {
     expect(denied.slice(0, 800)).not.toMatch(/deal_reference/);
   });
 
-  it("does not render a working PDF download button in Batch 3", () => {
+  it("renders a real PDF download surface (Batch 4+ shipped)", () => {
     const body = readFileSync(
       join(ROOT, "src/pages/funder/workspace/DealDetail.tsx"),
       "utf8",
     );
+    // The pre-Batch-4 placeholder copy must be gone.
     expect(body).not.toMatch(/PDF generation comes in the next build batch/);
-    expect(body).toMatch(/The sealed evidence pack contains the authoritative snapshot/);
+    // A real sealed-pack download surface must now exist.
+    expect(body).toMatch(/FunderPackDownloadButton/);
+    expect(body).toMatch(/Download sealed pack/);
   });
 
   it("does not display the raw evidence pack UUID to funders", () => {

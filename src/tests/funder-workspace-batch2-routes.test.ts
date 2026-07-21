@@ -47,6 +47,11 @@ const APPROVED_RPCS = new Set([
   // Batch 6 additive read-only RPCs (counters + safe admin picker):
   "fw_counters_admin_v1",
   "fw_admin_assignable_users_v1",
+  // Batch 8+ additive RPCs (canonical deal linkage, permission amendment):
+  "fw_admin_list_eligible_evidence_packs_v1",
+  "fw_admin_update_release_permissions_v1",
+  // Batch 12 additive: platform-admin resend of a still-invited funder user.
+  "p5b3_admin_resend_funder_invite_v1",
 ]);
 
 
