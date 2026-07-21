@@ -80,12 +80,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const previousRolesRef = useRef<AppRole[] | null>(null);
   const previousOrgIdRef = useRef<string | null | undefined>(undefined);
+  // Throttle for background role refreshes (visibility/focus/health check).
+  // Without this, quickly alternating focus/visibility events fire two role
+  // fetches in a row and each one produces a new `roles` array reference,
+  // cascading re-renders through every `useAuth()` consumer and making the
+  // whole page look like it "refreshed" when the tab regains focus.
+  const lastRoleFetchAtRef = useRef<number>(0);
+  const ROLE_REFRESH_MIN_INTERVAL_MS = 30_000;
 
   const invalidateRoleScopedCaches = useCallback(() => {
     // Force-refetch anything that depends on the caller's role/org context.
     // Backend remains the final authority - this only keeps the UI honest.
     queryClient.invalidateQueries();
   }, []);
+
 
   const fetchRoles = useCallback(async (userId: string) => {
     try {
