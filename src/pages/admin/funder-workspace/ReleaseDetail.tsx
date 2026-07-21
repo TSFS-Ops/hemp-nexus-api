@@ -196,7 +196,7 @@ export default function FunderWorkspaceReleaseDetail() {
                                                                             <Badge variant={linkageStatusBadgeVariant(linkage)} data-testid="fw-admin-release-linkage">
                                                                               {LINKAGE_STATUS_LABEL[linkage]}
                                                                             </Badge>
-                                                        </>>
+                                                        </>
                                                       );
                   })()}
                                           {requiresLegacyLinking(linkageStatusOf(release)) && (
@@ -248,7 +248,7 @@ export default function FunderWorkspaceReleaseDetail() {
                                     <>
                                                       <div><span className="text-muted-foreground">Revoked at:</span> {new Date(release.revoked_at).toLocaleString()}</div>
                                                       <div className="md:col-span-2"><span className="text-muted-foreground">Revocation reason:</span> {release.revocation_reason}</div>
-                                    </>>
+                                    </>
                                   )}
                                                       <div className="md:col-span-2"><span className="text-muted-foreground">Release reason:</span> {release.release_reason ?? "—"}</div>
                                         </CardContent>
@@ -450,7 +450,7 @@ export default function FunderWorkspaceReleaseDetail() {
                                                       </Table>
                                         </CardContent>
                             </Card>
-                  </>>
+                  </>
                 )}
         
               <Dialog open={revokeOpen} onOpenChange={setRevokeOpen}>
