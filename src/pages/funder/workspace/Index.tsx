@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Inbox } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Inbox, Info } from "lucide-react";
 import { FunderWorkspaceShell } from "./components/FunderWorkspaceShell";
 import {
   fetchFunderCounters,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/funder-workspace/funder-client";
 import type { DealReleaseRow } from "@/lib/funder-workspace/types";
 import { effectiveReleaseStatus } from "@/lib/funder-workspace/release-state";
+import { computeReleaseMetrics } from "@/lib/funder-workspace/metrics";
 import {
   EmptyState,
   ExpiryIndicator,
@@ -30,8 +32,6 @@ import {
   SectionHeading,
   StatusBadge,
 } from "@/lib/funder-workspace/ui";
-
-const EXPIRING_SOON_MS = 14 * 24 * 60 * 60 * 1000;
 
 export default function FunderWorkspaceIndex() {
   return (
