@@ -191,6 +191,21 @@ export default function FunderWorkspaceReleaseDetail() {
                   Link canonical deal
                 </Button>
               )}
+              <EditReleasePermissionsButton
+                releaseId={releaseId}
+                currentPermissions={{
+                  can_view_evidence_summary: release.can_view_evidence_summary,
+                  can_view_evidence_room: release.can_view_evidence_room,
+                  can_download_compiled_pack: release.can_download_compiled_pack,
+                  can_view_raw_documents: release.can_view_raw_documents,
+                  can_download_raw_documents: release.can_download_raw_documents,
+                  can_view_unmasked_sensitive_details:
+                    release.can_view_unmasked_sensitive_details,
+                }}
+                disabled={release.release_status === "revoked"}
+                disabledReason="Permissions cannot be amended on a revoked release."
+                onUpdated={() => { void refresh(); }}
+              />
               <Button
                 variant="destructive"
                 disabled={release.release_status === "revoked"}
