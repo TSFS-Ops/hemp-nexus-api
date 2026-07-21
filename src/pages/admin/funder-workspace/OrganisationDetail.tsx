@@ -1,19 +1,26 @@
 /**
- * Institutional Funder Evidence Workspace — Batch 2
- * Admin: Funder Organisation Detail (read-only in Batch 2).
- * Team management is intentionally out of scope for this batch.
+ * Institutional Funder Evidence Workspace — Admin Organisation Detail.
+ *
+ * Batch 12 addition: platform-admins can resend a still-invited funder
+ * user's invitation. The RPC (p5b3_admin_resend_funder_invite_v1)
+ * rejects non-invited users, so the button is disabled unless the row
+ * status is 'invited'.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { BackButton } from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getFunderOrganisation,
   listAuditEvents,
   listReleasesForOrg,
   listUsageEvents,
+  resendFunderInvite,
 } from "@/lib/funder-workspace/admin-client";
 import type {
   AuditEventRow,
@@ -22,13 +29,46 @@ import type {
   UsageEventRow,
 } from "@/lib/funder-workspace/types";
 
+interface FunderUserRow {
+  id: string;
+  email: string;
+  display_name: string | null;
+  role: string;
+  status: "invited" | "active" | "deactivated";
+  invited_at: string | null;
+  activated_at: string | null;
+}
+
 export default function FunderWorkspaceOrganisationDetail() {
   const { organisationId = "" } = useParams();
   const [org, setOrg] = useState<FunderOrganisationRow | null>(null);
   const [releases, setReleases] = useState<DealReleaseRow[]>([]);
   const [usage, setUsage] = useState<UsageEventRow[]>([]);
   const [audit, setAudit] = useState<AuditEventRow[]>([]);
+  const [users, setUsers] = useState<FunderUserRow[]>([]);
+  const [resending, setResending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const loadUsers = useCallback(async () => {
+    const { data, error: e } = await (supabase as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (c: string, v: string) => {
+            order: (c: string, o: { ascending: boolean }) => Promise<{
+              data: FunderUserRow[] | null;
+              error: { message: string } | null;
+            }>;
+          };
+        };
+      };
+    })
+      .from("p5_batch3_funder_users")
+      .select("id, email, display_name, role, status, invited_at, activated_at")
+      .eq("funder_organisation_id", organisationId)
+      .order("invited_at", { ascending: false });
+    if (e) throw new Error(e.message);
+    setUsers(data ?? []);
+  }, [organisationId]);
 
   useEffect(() => {
     (async () => {
@@ -43,11 +83,25 @@ export default function FunderWorkspaceOrganisationDetail() {
         setReleases(rels);
         setUsage(u);
         setAudit(a);
+        await loadUsers();
       } catch (e) {
         setError((e as Error).message);
       }
     })();
-  }, [organisationId]);
+  }, [organisationId, loadUsers]);
+
+  const handleResend = async (userId: string, email: string) => {
+    setResending(userId);
+    try {
+      await resendFunderInvite(userId);
+      toast.success(`Invitation resent to ${email}`);
+      await loadUsers();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResending(null);
+    }
+  };
 
   const active = releases.filter((r) => r.release_status === "active");
   const closed = releases.filter((r) => r.release_status !== "active");
