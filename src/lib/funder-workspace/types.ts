@@ -202,6 +202,11 @@ export interface PackVersionRow {
   download_expires_at: string | null;
   created_at: string;
   updated_at: string;
+  // Batch 12 — audited supersession lifecycle
+  is_current?: boolean;
+  superseded_by?: string | null;
+  superseded_at?: string | null;
+  supersession_reason?: string | null;
 }
 
 export interface UsageEventRow {

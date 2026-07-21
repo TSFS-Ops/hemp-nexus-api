@@ -118,17 +118,54 @@ export default function FunderWorkspaceReleaseDetail() {
   };
 
   const [generating, setGenerating] = useState(false);
+  const [supersedeOpen, setSupersedeOpen] = useState(false);
+  const [supersedeConfirm, setSupersedeConfirm] = useState(false);
+  const [supersedeReason, setSupersedeReason] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkMatchId, setLinkMatchId] = useState("");
   const [linkReason, setLinkReason] = useState("");
   const [linking, setLinking] = useState(false);
 
+  const currentPack = packs.find((p) => p.is_current && p.status === "sealed") ?? null;
+  const hasSealedPack = currentPack !== null;
+  const nextVersionLabel = hasSealedPack ? `Version ${currentPack!.version + 1}` : "Version 1";
+
   const handleGenerate = async () => {
     if (!release) return;
+    // First-generation path — no supersession.
     setGenerating(true);
     try {
       const res = await generateSealedPack(releaseId);
       toast.success(`Sealed pack v${res.version} generated`);
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleSupersede = async () => {
+    if (!release || !currentPack) return;
+    if (!supersedeConfirm) {
+      toast.error("Please confirm you intend to supersede the current sealed pack.");
+      return;
+    }
+    const trimmed = supersedeReason.trim();
+    if (trimmed.length < 10) {
+      toast.error("A written reason (min 10 characters) is required to supersede a sealed pack.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await generateSealedPack(releaseId, {
+        supersede: true,
+        supersedeReason: trimmed,
+      });
+      toast.success(`Sealed pack v${res.version} generated. Previous version marked as superseded.`);
+      setSupersedeOpen(false);
+      setSupersedeConfirm(false);
+      setSupersedeReason("");
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);
@@ -306,7 +343,7 @@ export default function FunderWorkspaceReleaseDetail() {
               : baseGate;
             return (
               <Card>
-                <CardHeader className="flex-row items-center justify-between">
+                <CardHeader className="flex-row items-center justify-between gap-2 flex-wrap">
                   <div>
                     <CardTitle className="text-base">Pack versions</CardTitle>
                     {!gate.ok && (
@@ -314,16 +351,34 @@ export default function FunderWorkspaceReleaseDetail() {
                         {gate.reason}
                       </p>
                     )}
+                    {gate.ok && hasSealedPack && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Current sealed pack: <span className="font-medium">v{currentPack!.version}</span>. Generating a new version supersedes it; the previous version stays immutable in history.
+                      </p>
+                    )}
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={handleGenerate}
-                    disabled={generating || !gate.ok}
-                    title={gate.reason}
-                    data-testid="fw-admin-generate-pack"
-                  >
-                    {generating ? "Generating…" : "Generate sealed pack"}
-                  </Button>
+                  {hasSealedPack ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSupersedeOpen(true)}
+                      disabled={generating || !gate.ok}
+                      title={gate.reason}
+                      data-testid="fw-admin-supersede-pack"
+                    >
+                      {`Generate ${nextVersionLabel} (supersede)`}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={handleGenerate}
+                      disabled={generating || !gate.ok}
+                      title={gate.reason}
+                      data-testid="fw-admin-generate-pack"
+                    >
+                      {generating ? "Generating…" : "Generate sealed pack"}
+                    </Button>
+                  )}
                 </CardHeader>
 
                 <CardContent>
@@ -337,6 +392,7 @@ export default function FunderWorkspaceReleaseDetail() {
                           <TableHead>Status</TableHead>
                           <TableHead>Generated</TableHead>
                           <TableHead>Sealed</TableHead>
+                          <TableHead>Superseded</TableHead>
                           <TableHead>SHA-256</TableHead>
                           <TableHead>Funder can download</TableHead>
                         </TableRow>
@@ -344,12 +400,38 @@ export default function FunderWorkspaceReleaseDetail() {
                       <TableBody>
                         {packs.map((p) => {
                           const readiness = packDownloadReadiness(release, p);
+                          const isCurrent = p.is_current === true && p.status === "sealed";
+                          const isSuperseded = p.status === "superseded" || (p.superseded_at != null && !isCurrent);
                           return (
-                            <TableRow key={p.id}>
-                              <TableCell>v{p.version}</TableCell>
-                              <TableCell><Badge>{p.status}</Badge></TableCell>
+                            <TableRow key={p.id} data-testid={`fw-admin-pack-row-${p.id}`}>
+                              <TableCell className="font-medium">
+                                v{p.version}
+                                {isCurrent && (
+                                  <Badge variant="default" className="ml-2" data-testid={`fw-admin-pack-current-${p.id}`}>
+                                    Current
+                                  </Badge>
+                                )}
+                                {isSuperseded && (
+                                  <Badge variant="secondary" className="ml-2" data-testid={`fw-admin-pack-superseded-${p.id}`}>
+                                    Superseded
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell><Badge variant={isCurrent ? "default" : "secondary"}>{p.status}</Badge></TableCell>
                               <TableCell className="text-xs">{p.generated_at ? new Date(p.generated_at).toLocaleString() : "—"}</TableCell>
                               <TableCell className="text-xs">{p.sealed_at ? new Date(p.sealed_at).toLocaleString() : "—"}</TableCell>
+                              <TableCell className="text-xs" title={p.supersession_reason ?? undefined}>
+                                {p.superseded_at ? (
+                                  <div>
+                                    <div>{new Date(p.superseded_at).toLocaleString()}</div>
+                                    {p.supersession_reason && (
+                                      <div className="text-muted-foreground truncate max-w-[16rem]">
+                                        {p.supersession_reason}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : "—"}
+                              </TableCell>
                               <TableCell className="font-mono text-xs">{p.file_sha256 ? p.file_sha256.slice(0, 12) + "…" : "—"}</TableCell>
                               <TableCell>
                                 <Badge
@@ -370,6 +452,57 @@ export default function FunderWorkspaceReleaseDetail() {
               </Card>
             );
           })()}
+
+          {/* Supersession dialog — explicit confirmation + written reason. */}
+          <Dialog open={supersedeOpen} onOpenChange={(o) => { setSupersedeOpen(o); if (!o) { setSupersedeConfirm(false); setSupersedeReason(""); } }}>
+            <DialogContent data-testid="fw-admin-supersede-dialog">
+              <DialogHeader>
+                <DialogTitle>Supersede sealed pack v{currentPack?.version}</DialogTitle>
+              </DialogHeader>
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>This action changes the funder-visible pack.</AlertTitle>
+                <AlertDescription>
+                  A new sealed <strong>{nextVersionLabel}</strong> will be generated and become the current pack shown to the funder.
+                  The previous version stays in history as immutable and marked <strong>Superseded</strong>. No bytes, hashes, timestamps or audit history are altered.
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="fw-supersede-reason">Reason (recorded in the audit trail)</Label>
+                <Textarea
+                  id="fw-supersede-reason"
+                  value={supersedeReason}
+                  onChange={(e) => setSupersedeReason(e.target.value)}
+                  placeholder="e.g. Updated evidence following bank re-verification on 21 Jul 2026."
+                  rows={3}
+                  data-testid="fw-admin-supersede-reason"
+                />
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={supersedeConfirm}
+                    onChange={(e) => setSupersedeConfirm(e.target.checked)}
+                    className="mt-1"
+                    data-testid="fw-admin-supersede-confirm"
+                  />
+                  <span>I confirm I intend to supersede the current sealed pack for this release.</span>
+                </label>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="ghost" disabled={generating}>Cancel</Button>
+                </DialogClose>
+                <Button
+                  onClick={handleSupersede}
+                  disabled={generating || !supersedeConfirm || supersedeReason.trim().length < 10}
+                  data-testid="fw-admin-supersede-submit"
+                >
+                  {generating ? "Generating…" : `Generate ${nextVersionLabel}`}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
 
           <AdminRfiPanel releaseId={releaseId} />
           <AdminSharedCommentsPanel releaseId={releaseId} />
