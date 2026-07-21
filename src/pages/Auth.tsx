@@ -64,6 +64,27 @@ export default function Auth() {
       });
     }
 
+    // Funder-persona short-circuit (authoritative, client-directed).
+    // A user whose auth_user_id maps to a p5_batch3_funder_users row belongs
+    // to exactly one workspace — the Funder Workspace — and must never see
+    // the persona chooser or land on Trade Desk / HQ / any other surface.
+    try {
+      const { data: funderRow } = await (supabase as unknown as {
+        from: (t: string) => { select: (s: string) => { eq: (c: string, v: string) => { neq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { id: string } | null }> } } } };
+      })
+        .from("p5_batch3_funder_users")
+        .select("id")
+        .eq("auth_user_id", userId)
+        .neq("status", "deactivated")
+        .maybeSingle();
+      if (funderRow) {
+        console.info("[Auth] resolved → /funder/workspace (funder-org member)");
+        return "/funder/workspace";
+      }
+    } catch (e) {
+      console.warn("[Auth] funder-membership lookup threw - falling through", e);
+    }
+
     // Role lookup (best-effort; failures fall through to non-admin path).
     let isPlatformAdmin = false;
     try {
