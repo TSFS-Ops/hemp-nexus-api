@@ -118,17 +118,54 @@ export default function FunderWorkspaceReleaseDetail() {
   };
 
   const [generating, setGenerating] = useState(false);
+  const [supersedeOpen, setSupersedeOpen] = useState(false);
+  const [supersedeConfirm, setSupersedeConfirm] = useState(false);
+  const [supersedeReason, setSupersedeReason] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkMatchId, setLinkMatchId] = useState("");
   const [linkReason, setLinkReason] = useState("");
   const [linking, setLinking] = useState(false);
 
+  const currentPack = packs.find((p) => p.is_current && p.status === "sealed") ?? null;
+  const hasSealedPack = currentPack !== null;
+  const nextVersionLabel = hasSealedPack ? `Version ${currentPack!.version + 1}` : "Version 1";
+
   const handleGenerate = async () => {
     if (!release) return;
+    // First-generation path — no supersession.
     setGenerating(true);
     try {
       const res = await generateSealedPack(releaseId);
       toast.success(`Sealed pack v${res.version} generated`);
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleSupersede = async () => {
+    if (!release || !currentPack) return;
+    if (!supersedeConfirm) {
+      toast.error("Please confirm you intend to supersede the current sealed pack.");
+      return;
+    }
+    const trimmed = supersedeReason.trim();
+    if (trimmed.length < 10) {
+      toast.error("A written reason (min 10 characters) is required to supersede a sealed pack.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await generateSealedPack(releaseId, {
+        supersede: true,
+        supersedeReason: trimmed,
+      });
+      toast.success(`Sealed pack v${res.version} generated. Previous version marked as superseded.`);
+      setSupersedeOpen(false);
+      setSupersedeConfirm(false);
+      setSupersedeReason("");
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);
