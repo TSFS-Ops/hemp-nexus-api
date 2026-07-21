@@ -471,6 +471,14 @@ Deno.serve(async (req) => {
                    if (!/^[0-9a-f-]{36}$/i.test(releaseId)) {
                            return json({ error: "invalid_release_id" }, 400);
                    }
+      const supersede = body?.supersede === true;
+      const supersedeReason: string | null =
+        typeof body?.supersede_reason === "string" && body.supersede_reason.trim().length > 0
+          ? String(body.supersede_reason).slice(0, 2000)
+          : null;
+      if (supersede && !supersedeReason) {
+        return json({ error: "supersede_reason_required" }, 400);
+      }
 
       const url = Deno.env.get("SUPABASE_URL")!;
                    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
