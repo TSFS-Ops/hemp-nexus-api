@@ -869,10 +869,9 @@ export function FunderDecisionPanel({
             decision. Prior decisions remain visible for audit.
           </p>
         </div>
-        {canRecordDecision(role) && (
+        {mayRecord && (
           <Button
             size="sm"
-            disabled={!workable}
             onClick={() => setRecording(true)}
             data-testid="fw-funder-decision-record"
           >
