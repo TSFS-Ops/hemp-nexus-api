@@ -200,8 +200,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      // Preserve object identity when the user id hasn't changed. Supabase
+      // fires TOKEN_REFRESHED whenever the tab regains focus and hands us a
+      // brand new session/user object each time. If we blindly setSession /
+      // setUser, every `useAuth()` consumer re-renders and any effect keyed
+      // on `user` (rather than `user.id`) re-runs - which is what makes the
+      // page look like it "refreshes" when you switch tabs and come back.
+      setSession((prev) => {
+        if (prev && session && prev.access_token === session.access_token) {
+          return prev;
+        }
+        return session;
+      });
+      setUser((prev) => {
+        const next = session?.user ?? null;
+        if (prev && next && prev.id === next.id) return prev;
+        return next;
+      });
       
       if (event === "SIGNED_OUT" || (event === "TOKEN_REFRESHED" && !session)) {
         const wasExplicit = explicitSignOutRef.current;
@@ -234,24 +249,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (session?.user) {
+        const isFirstUser = !hadUserRef.current;
         hadUserRef.current = true;
-        // A new authenticated user appeared - the next role fetch is the
-        // authoritative one. Mark roles as not-yet-loaded so RequireAuth
-        // shows the loader instead of redirecting on stale roles=[].
-        setRolesLoaded(false);
+        // Only reset rolesLoaded when a *different* user actually appears
+        // (first sign-in, or a user swap). Token refreshes on the same user
+        // must NOT flip rolesLoaded back to false - doing so causes every
+        // route guard listening to `rolesLoaded` to render its loader for a
+        // beat, which is what the user perceives as a page "refresh" when
+        // returning to the tab.
+        if (isFirstUser) {
+          setRolesLoaded(false);
+        }
         // Only verify profile on sign-in/sign-up, not every token refresh
         const needsProfileCheck = event === "SIGNED_IN" || event === "INITIAL_SESSION";
         setTimeout(async () => {
           if (needsProfileCheck) {
             await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
           }
-          fetchRoles(session.user.id);
+          // On silent token refreshes, skip the role re-fetch entirely -
+          // the visibility/focus listener + 60s health check already cover
+          // mid-session role changes and are throttled. Refetching here
+          // means every tab focus produces a duplicate roles query.
+          if (event !== "TOKEN_REFRESHED" && event !== "USER_UPDATED") {
+            fetchRoles(session.user.id);
+          }
         }, 0);
       } else {
         setRoles([]);
         setRolesLoaded(true);
       }
     });
+
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
