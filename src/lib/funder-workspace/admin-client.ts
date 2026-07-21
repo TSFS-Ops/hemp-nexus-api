@@ -334,6 +334,44 @@ export async function linkReleaseToMatch(input: { p_release_id: string; p_match_
   if (error) throw new Error(error.message);
 }
 
+export interface UpdateReleasePermissionsInput {
+  p_release_id: string;
+  p_can_view_evidence_summary: boolean;
+  p_can_view_evidence_room: boolean;
+  p_can_download_compiled_pack: boolean;
+  p_can_view_raw_documents: boolean;
+  p_can_download_raw_documents: boolean;
+  p_can_view_unmasked_sensitive_details: boolean;
+  p_reason: string;
+}
+
+export interface UpdateReleasePermissionsResult {
+  release_id: string;
+  changed: boolean;
+  old: Record<string, boolean>;
+  new: Record<string, boolean>;
+}
+
+/**
+ * Platform-Admin-only, fully audited amendment of the six release-permission
+ * flags on an EXISTING non-revoked release. All server-side rules
+ * (admin gate, blank-reason rejection, revoked-release rejection,
+ * raw-download-requires-raw-view, old→new audit) are enforced inside
+ * fw_admin_update_release_permissions_v1.
+ */
+export async function updateReleasePermissions(
+  input: UpdateReleasePermissionsInput,
+): Promise<UpdateReleasePermissionsResult> {
+  const reason = (input.p_reason ?? "").trim();
+  if (!reason) throw new Error("Reason is required");
+  const { data, error } = await (supabase as any).rpc(
+    "fw_admin_update_release_permissions_v1",
+    { ...input, p_reason: reason },
+  );
+  if (error) throw new Error(error.message);
+  return data as UpdateReleasePermissionsResult;
+}
+
 // Exported RPC names — used by tests to guarantee we only call approved RPCs.
 export const FUNDER_WORKSPACE_ADMIN_RPCS = [
   "fw_admin_approve_funder_org_v1",
@@ -341,6 +379,7 @@ export const FUNDER_WORKSPACE_ADMIN_RPCS = [
   "fw_admin_release_deal_v1",
   "fw_admin_release_deal_v2",
   "fw_admin_revoke_deal_release_v1",
+  "fw_admin_update_release_permissions_v1",
   "fw_admin_search_releasable_deals_v1",
   "fw_admin_list_eligible_evidence_packs_v1",
   "fw_admin_link_release_to_match_v1",
