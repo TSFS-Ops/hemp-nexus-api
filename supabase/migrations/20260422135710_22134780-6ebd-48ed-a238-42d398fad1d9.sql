@@ -24,6 +24,12 @@ BEGIN
   SELECT id, org_id INTO v_dove_id, v_dove_orig_org
     FROM profiles WHERE email = v_dove_email;
 
+  IF v_dove_id IS NULL THEN
+    INSERT INTO _proof_results (run_id, step, detail) VALUES (v_run, 'skipped',
+      'Proof prerequisite profile not present; proof block skipped during clean replay.');
+    RETURN v_run;
+  END IF;
+
   INSERT INTO organizations (id, name) VALUES
     (v_initiator_org, 'PROOF-INITIATOR-' || v_initiator_org),
     (v_temp_org, 'PROOF-TEMPSWAP-' || v_temp_org);

@@ -471,6 +471,14 @@ Deno.serve(async (req) => {
                    if (!/^[0-9a-f-]{36}$/i.test(releaseId)) {
                            return json({ error: "invalid_release_id" }, 400);
                    }
+      const supersede = body?.supersede === true;
+      const supersedeReason: string | null =
+        typeof body?.supersede_reason === "string" && body.supersede_reason.trim().length > 0
+          ? String(body.supersede_reason).slice(0, 2000)
+          : null;
+      if (supersede && !supersedeReason) {
+        return json({ error: "supersede_reason_required" }, 400);
+      }
 
       const url = Deno.env.get("SUPABASE_URL")!;
                    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -483,7 +491,11 @@ Deno.serve(async (req) => {
       });
                    const admin = createClient(url, service, { auth: { persistSession: false } });
 
-      const { data: userInfo, error: userErr } = await userClient.auth.getUser();
+      // Pass the JWT explicitly — without an active session the SDK does not
+      // attach the global Authorization header to /auth/v1/user, which surfaces
+      // as a spurious `unauthorized` from an otherwise-valid caller.
+      const bearer = authHeader.replace(/^Bearer\s+/i, "");
+      const { data: userInfo, error: userErr } = await userClient.auth.getUser(bearer);
                    if (userErr || !userInfo?.user) return json({ error: "unauthorized" }, 401);
                    const generatedByEmail = userInfo.user.email ?? userInfo.user.id;
 
@@ -555,12 +567,22 @@ Deno.serve(async (req) => {
                   p_file_sha256: fileSha256,
                   p_manifest_sha256: null,
                   p_watermark_template: renderWatermark(WATERMARK_TEMPLATE, wmVars),
+                  p_supersede: supersede,
+                  p_supersede_reason: supersedeReason,
         },
             );
                    if (sealErr) {
                            // Best-effort cleanup on seal failure so we don't leave orphan PDFs.
                      await admin.storage.from(BUCKET).remove([storagePath]).catch(() => undefined);
-                           return json({ error: "seal_failed", detail: sealErr.message }, 500);
+                           const msg = sealErr.message || "";
+                           // Map "sealed pack already exists" → 409 conflict for the UI.
+                           if (/sealed pack already exists/i.test(msg)) {
+                             return json({ error: "supersede_required", detail: msg }, 409);
+                           }
+                           if (/p_supersede_reason is required/i.test(msg)) {
+                             return json({ error: "supersede_reason_required", detail: msg }, 400);
+                           }
+                           return json({ error: "seal_failed", detail: msg }, 500);
                    }
 
       return json({

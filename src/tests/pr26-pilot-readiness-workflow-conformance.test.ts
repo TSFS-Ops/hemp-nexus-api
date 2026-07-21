@@ -72,23 +72,32 @@ describe("PR #26 - workflow is fail-closed", () => {
     expect(isoBlock).not.toMatch(/Pilot Funder Bank/);
   });
 
-  it("does not call the non-existent readiness RPC", () => {
-    // fw_admin_check_pilot_fixtures_v1 is not defined in the workspace
-    // migrations; the workflow must not depend on it.
-    expect(wf).not.toMatch(/fw_admin_check_pilot_fixtures_v1/);
-  });
+    it("intentionally calls the pilot readiness RPC fw_admin_check_pilot_fixtures_v1", () => {
+      // fw_admin_check_pilot_fixtures_v1 IS defined by
+      // supabase/migrations/20260713090000_pilot_fixture_and_readiness_rpc.sql
+      // and the workflow is expected to call it.
+      expect(wf).toMatch(/fw_admin_check_pilot_fixtures_v1/);
+    });
 
-  it("does not require a sealed funder PDF (funder_pack_versions) pre-release", () => {
+    it("asserts every readiness check_key row is exactly Ready", () => {
+      expect(wf).toMatch(/!=\s*"Ready"/);
+      expect(wf).toMatch(/FIXTURES_READY_ALL_NINE/);
+    });
+
+    it("requires the isolation_no_release readiness key", () => {
+      expect(wf).toMatch(/isolation_no_release/);
+    });
+
+it("does not require a sealed funder PDF (funder_pack_versions) pre-release", () => {
     // Pre-release readiness is about the source evidence pack, not the
     // post-release sealed funder PDF.
     expect(wf).not.toMatch(/funder_pack_versions/);
   });
 
-  it("queries the correct funder-organisation table (p5_batch3, not organizations)", () => {
-    expect(wf).toContain("p5_batch3_funder_organisations");
-    expect(wf).not.toMatch(/FROM public\.organizations\b/);
-  });
-});
+    it("does not query the incorrect organizations table directly", () => {
+      expect(wf).not.toMatch(/FROM public\.organizations\b/);
+    });
+    });
 
 describe("PR #26 - fixed IDs match the actual pilot migration", () => {
   it("both fixed IDs are set on p5_batch3_funder_organisations in the migration", () => {
@@ -107,11 +116,12 @@ describe("PR #26 - validation package doc is honest and clean", () => {
     expect(doc).toContain(ISOLATION_TEST_FUND_ID);
   });
 
-  it("does not promise a readiness RPC that does not exist", () => {
-    expect(doc).not.toMatch(/fw_admin_check_pilot_fixtures_v1/);
-  });
+    it("documents the pilot readiness RPC accurately", () => {
+      expect(doc).toMatch(/fw_admin_check_pilot_fixtures_v1/);
+      expect(doc).not.toMatch(/must never exist/i);
+    });
 
-  it("does not assume a demo release, consent row, or sealed pack already exists", () => {
+it("does not assume a demo release, consent row, or sealed pack already exists", () => {
     expect(doc).not.toMatch(/one demo match with populated buyer\/seller/);
     expect(doc).not.toMatch(/A sealed pack version exists/);
     expect(doc).not.toMatch(/Consent rows exist for the release/);

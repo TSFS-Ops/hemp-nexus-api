@@ -12,22 +12,30 @@ INSERT INTO public.cron_heartbeats AS h
 VALUES
   ('purge-email-send-log-daily-dryrun', 86400, 'pending', now())
 ON CONFLICT (job_name) DO UPDATE
-  SET expected_interval_seconds = 86400,
-      updated_at = now();
+SET expected_interval_seconds = 86400,
+    updated_at = now();
 
 -- 2) Alter jobid 39 only (purge-email-send-log-daily-dryrun) to use cron_invoke.
-SELECT cron.alter_job(
-  job_id  := 39,
-  command := $cmd$SELECT public.cron_invoke(
-  'purge-email-send-log-daily-dryrun',
-  'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/purge-email-send-log-daily',
-  jsonb_build_object(
-    'dry_run', true,
-    'max_orgs', 50,
-    'max_rows_per_org', 5000,
-    'source', 'cron:purge-email-send-log-daily-dryrun',
-    'trigger', 'cron',
-    'time', now()
-  )
-);$cmd$
-);
+-- Guarded: jobid 39 may not exist in a clean replay if earlier cron-setup
+-- migrations were skipped/guarded for the same reason.
+DO $guard$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobid = 39) THEN
+    PERFORM cron.alter_job(
+      job_id := 39,
+      command := $cmd$SELECT public.cron_invoke(
+        'purge-email-send-log-daily-dryrun',
+        'https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/purge-email-send-log-daily',
+        jsonb_build_object(
+          'dry_run', true,
+          'max_orgs', 50,
+          'max_rows_per_org', 5000,
+          'source', 'cron:purge-email-send-log-daily-dryrun',
+          'trigger', 'cron',
+          'time', now()
+        )
+      );$cmd$
+    );
+  END IF;
+END
+$guard$;

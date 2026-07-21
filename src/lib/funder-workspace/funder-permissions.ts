@@ -26,11 +26,11 @@ export const FUNDER_ROLE_SUMMARY: Record<string, string[]> = {
   ],
   funder_approver: [
     "View assigned deals and released evidence",
-    "Future: record funding decisions (not in this batch)",
+      "Record the formal funding decision for a release", 
   ],
   funder_reviewer: [
     "View assigned deals and released evidence",
-    "Future: submit RFIs (not in this batch)",
+      "Create requests for information (RFIs) and shared comments", 
   ],
   funder_viewer: ["View assigned deals and released evidence (read-only)"],
   external_adviser: ["View assigned deals in read-only mode"],

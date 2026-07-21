@@ -18,7 +18,7 @@ function findMigration(needle: string): string {
 }
 
 describe("controlled pilot — evidence pack resolution", () => {
-  const migration = findMigration("fw_admin_list_eligible_evidence_packs_v1");
+  const migration = findMigration("CREATE OR REPLACE FUNCTION public.fw_admin_list_eligible_evidence_packs_v1");
   const form = readFileSync("src/pages/admin/funder-workspace/NewRelease.tsx", "utf8");
   const client = readFileSync("src/lib/funder-workspace/admin-client.ts", "utf8");
   const pilot = readFileSync("src/pages/admin/funder-workspace/PilotConsole.tsx", "utf8");

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Menu, X, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFunderMembership } from "@/hooks/use-funder-membership";
 import { ROUTES } from "@/lib/constants";
 
 type MegaItem = { label: string; description: string; to: string };
@@ -48,6 +49,7 @@ const MEGA_NAV: MegaCategory[] = [
 
 export function PublicHeader() {
   const { isAuthenticated, isLoading, isPlatformAdmin, rolesLoaded } = useAuth();
+  const { isFunderUser, loaded: funderLoaded } = useFunderMembership();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const closeTimer = useRef<number | null>(null);
@@ -65,21 +67,28 @@ export function PublicHeader() {
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
   }, []);
 
-  // Wait until the auth session + role lookup have resolved before we
-  // render auth-state-dependent CTAs. Otherwise an already-signed-in
-  // admin arriving on www.izenzo.co.za briefly sees the "Log In /
-  // Create Account" buttons (flash of unauthenticated state) and may
-  // assume the public domain has dropped their session.
-  const authReady = !isLoading && (!isAuthenticated || rolesLoaded);
+  // Wait until the auth session + role lookup + funder-membership lookup
+  // have resolved before we render auth-state-dependent CTAs. Otherwise
+  // an already-signed-in funder user briefly sees a "Dashboard" CTA that
+  // points at /desk before the funder check completes.
+  const authReady =
+    !isLoading && (!isAuthenticated || (rolesLoaded && funderLoaded));
 
   // Per client direction (2026-06-25): keep Dashboard CTAs same-origin.
-  // The public domain (www) and the legacy console domain (api.trade)
-  // are separate browser origins with separate localStorage, so a
-  // cross-domain Dashboard link forces a re-auth on the other origin
-  // even when the user is signed in here. The app is now served on both
-  // hosts, so a same-origin Link preserves the active session.
-  const dashboardHref = isPlatformAdmin ? "/hq/users" : ROUTES.DASHBOARD;
-  const dashboardLabel = isPlatformAdmin ? "Go to HQ" : "Dashboard";
+  // Funder-only users (any active row on p5_batch3_funder_users) route to
+  // the canonical Funder Workspace — the Trade Desk is not their shell.
+  // Platform admins still get "Go to HQ". Everyone else gets the default
+  // dashboard.
+  const dashboardHref = isPlatformAdmin
+    ? "/hq/users"
+    : isFunderUser
+      ? "/funder/workspace"
+      : ROUTES.DASHBOARD;
+  const dashboardLabel = isPlatformAdmin
+    ? "Go to HQ"
+    : isFunderUser
+      ? "Funder Workspace"
+      : "Dashboard";
   const authHref = ROUTES.AUTH;
 
   return (

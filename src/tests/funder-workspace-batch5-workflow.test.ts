@@ -297,17 +297,17 @@ describe("Batch 5 — Batch 1–4 preservation", () => {
   it("does not modify existing Batch 3/4 RPC signatures", () => {
     const sql = allMigrations();
     // These RPCs exist from earlier batches and must not be replaced with
-    // a different signature by Batch 5.
+    // a different signature by later batches.
+    // NOTE: fw_admin_seal_pack_v1 is intentionally excluded — Batch 12
+    // (audited supersession) legitimately re-declares it with an additive
+    // signature (supersede + reason). All other batch3/4 RPCs remain frozen.
     for (const legacy of [
       "fw_admin_approve_funder_org_v1",
       "fw_admin_reject_funder_org_v1",
       "fw_admin_release_deal_v1",
       "fw_admin_revoke_deal_release_v1",
-      "fw_admin_seal_pack_v1",
       "fw_funder_authorize_pack_download_v1",
     ]) {
-      // No Batch 5 migration file should redefine them (only earlier
-      // migrations may).
       const latestB5 = readdirSync(MIG_DIR)
         .filter((f) => f.endsWith(".sql"))
         .sort()

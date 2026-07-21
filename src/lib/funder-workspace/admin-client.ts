@@ -173,7 +173,7 @@ export async function listAuditEvents(opts?: {
   objectId?: string;
   limit?: number;
 }): Promise<AuditEventRow[]> {
-  let q = (supabase as any).from(T.audit).select("*").order("created_at", { ascending: false });
+  let q = (supabase as any).from(T.audit).select("*").order("occurred_at", { ascending: false });
   if (opts?.organisationId) q = q.eq("funder_organisation_id", opts.organisationId);
   if (opts?.objectId) q = q.eq("object_id", opts.objectId);
   q = q.limit(opts?.limit ?? 200);
@@ -192,13 +192,83 @@ export interface GenerateSealedPackResult {
   storage_path: string;
 }
 
-export async function generateSealedPack(releaseId: string): Promise<GenerateSealedPackResult> {
-  const { data, error } = await (supabase as any).functions.invoke("funder-pack-generate", {
-    body: { release_id: releaseId },
+const FRIENDLY_PACK_ERRORS: Record<string, string> = {
+  unauthorized: "Sign in again — your session has expired.",
+  context_denied:
+    "This release cannot be generated right now (platform-admin, active release or consent check failed). Confirm you are signed in as a platform administrator and both counterparties have granted consent.",
+  linkage_required:
+    "No canonical deal is linked to this release. Link a canonical deal before sealing a pack.",
+  invalid_release_id: "This release identifier is invalid.",
+  upload_failed:
+    "The sealed pack could not be uploaded to secure storage. Please retry; if it persists, contact platform support.",
+  seal_failed:
+    "The pack was uploaded but the sealing step failed. The orphan file has been cleaned up — please retry.",
+  method_not_allowed: "Internal error (method not allowed). Please retry.",
+  unhandled:
+    "The pack generator hit an unexpected error. Please retry; if it persists, contact platform support with the release ID.",
+};
+
+export interface GenerateSealedPackOptions {
+  /** When true, supersede the current sealed pack. Requires supersedeReason. */
+  supersede?: boolean;
+  /** Written reason. Required when supersede=true (server enforces). */
+  supersedeReason?: string;
+}
+
+export async function generateSealedPack(
+  releaseId: string,
+  options: GenerateSealedPackOptions = {},
+): Promise<GenerateSealedPackResult> {
+  if (options.supersede && !options.supersedeReason?.trim()) {
+    throw new Error("A written reason is required to supersede a sealed pack.");
+  }
+  // NOTE: do NOT destructure `supabase.functions.invoke` — the FunctionsClient
+  // method reads `this.region` internally and throws
+  // "Cannot read properties of undefined (reading 'region')" when called
+  // without its owning object. Always call it as a method.
+  const { data, error } = await supabase.functions.invoke("funder-pack-generate", {
+    body: {
+      release_id: releaseId,
+      supersede: !!options.supersede,
+      supersede_reason: options.supersedeReason ?? null,
+    },
   });
-  if (error) throw new Error(error.message ?? "generation failed");
-  if (!data?.ok) throw new Error(data?.detail ?? data?.error ?? "generation failed");
-  return data as GenerateSealedPackResult;
+
+  if (error) {
+    // FunctionsHttpError wraps a Response on `.context` with the real error body.
+    const ctx = (error as { context?: Response }).context;
+    let body: { error?: string; detail?: string } | null = null;
+    try {
+      if (ctx && typeof ctx.clone === "function") body = await ctx.clone().json();
+    } catch { /* ignore */ }
+    const code = body?.error ?? "";
+    const friendly = FRIENDLY_PACK_ERRORS[code];
+    throw new Error(
+      friendly ?? body?.detail ?? body?.error ?? (error as { message?: string }).message ?? "Sealed pack generation failed.",
+    );
+  }
+  const d = data as (GenerateSealedPackResult & { error?: string; detail?: string }) | null;
+  if (!d?.ok) {
+    const code = d?.error ?? "";
+    throw new Error(FRIENDLY_PACK_ERRORS[code] ?? d?.detail ?? d?.error ?? "Sealed pack generation failed.");
+  }
+  return d;
+}
+
+/**
+ * Platform-Admin-only: refresh the invited-at timestamp on a still-invited
+ * funder user and emit a `funder_user.invite_resent` audit event.
+ * Server rejects the call for users whose status is not 'invited'.
+ */
+export async function resendFunderInvite(
+  userId: string,
+): Promise<{ user_id: string; email: string; funder_organisation_id: string; resent_at: string }> {
+  const client = supabase as unknown as {
+    rpc: (n: string, a: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
+  const { data, error } = await client.rpc("p5b3_admin_resend_funder_invite_v1", { p_user_id: userId });
+  if (error) throw new Error(error.message);
+  return data as { user_id: string; email: string; funder_organisation_id: string; resent_at: string };
 }
 
 // ─── Batch 6: counters + assignment picker ───────────────────
@@ -303,6 +373,44 @@ export async function linkReleaseToMatch(input: { p_release_id: string; p_match_
   if (error) throw new Error(error.message);
 }
 
+export interface UpdateReleasePermissionsInput {
+  p_release_id: string;
+  p_can_view_evidence_summary: boolean;
+  p_can_view_evidence_room: boolean;
+  p_can_download_compiled_pack: boolean;
+  p_can_view_raw_documents: boolean;
+  p_can_download_raw_documents: boolean;
+  p_can_view_unmasked_sensitive_details: boolean;
+  p_reason: string;
+}
+
+export interface UpdateReleasePermissionsResult {
+  release_id: string;
+  changed: boolean;
+  old: Record<string, boolean>;
+  new: Record<string, boolean>;
+}
+
+/**
+ * Platform-Admin-only, fully audited amendment of the six release-permission
+ * flags on an EXISTING non-revoked release. All server-side rules
+ * (admin gate, blank-reason rejection, revoked-release rejection,
+ * raw-download-requires-raw-view, old→new audit) are enforced inside
+ * fw_admin_update_release_permissions_v1.
+ */
+export async function updateReleasePermissions(
+  input: UpdateReleasePermissionsInput,
+): Promise<UpdateReleasePermissionsResult> {
+  const reason = (input.p_reason ?? "").trim();
+  if (!reason) throw new Error("Reason is required");
+  const { data, error } = await (supabase as any).rpc(
+    "fw_admin_update_release_permissions_v1",
+    { ...input, p_reason: reason },
+  );
+  if (error) throw new Error(error.message);
+  return data as UpdateReleasePermissionsResult;
+}
+
 // Exported RPC names — used by tests to guarantee we only call approved RPCs.
 export const FUNDER_WORKSPACE_ADMIN_RPCS = [
   "fw_admin_approve_funder_org_v1",
@@ -310,6 +418,7 @@ export const FUNDER_WORKSPACE_ADMIN_RPCS = [
   "fw_admin_release_deal_v1",
   "fw_admin_release_deal_v2",
   "fw_admin_revoke_deal_release_v1",
+  "fw_admin_update_release_permissions_v1",
   "fw_admin_search_releasable_deals_v1",
   "fw_admin_list_eligible_evidence_packs_v1",
   "fw_admin_link_release_to_match_v1",

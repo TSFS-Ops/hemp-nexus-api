@@ -140,7 +140,7 @@ export async function listMyAuditEvents(opts?: {
   let q = (supabase as any)
     .from(T.audit)
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("occurred_at", { ascending: false });
   if (opts?.objectId) q = q.eq("object_id", opts.objectId);
   q = q.limit(opts?.limit ?? 100);
   const { data, error } = await q;
@@ -167,6 +167,9 @@ export async function requestPackDownload(
   );
   if (error) throw new Error(error.message ?? "download not available");
   if (!data?.ok) throw new Error(data?.error ?? "download not available");
+  if (typeof data.signed_url !== "string" || data.signed_url.length === 0) {
+    throw new Error("Download link was empty. Please try again.");
+  }
   return data as RequestPackDownloadResult;
 }
 

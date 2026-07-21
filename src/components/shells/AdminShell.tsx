@@ -158,6 +158,8 @@ export function AdminShell({ children }: { children?: ReactNode }) {
                     Sign out
                   </Button>
                 </div>
+                <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={handleSignOut} aria-label="Sign out" data-testid="admin-shell-signout-mobile">
+                <LogOut className="h-4 w-4" /></Button>
               </div>
             </div>
           </header>

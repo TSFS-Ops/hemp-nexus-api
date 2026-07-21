@@ -21,6 +21,8 @@ import { SessionExpiredModal } from "@/components/SessionExpiredModal";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { CrossTabCacheBridge } from "@/lib/cross-tab-bus";
 import { PersonaShellRouter } from "@/components/shells/PersonaShellRouter";
+import { FunderOnlyDeskGuard } from "@/components/FunderOnlyDeskGuard";
+import { FunderPersonaContainment } from "@/components/FunderPersonaContainment";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
@@ -332,6 +334,7 @@ function App() {
               <RouteErrorBoundary>
                 <Suspense fallback={<FullPageLoader />}>
                 <PersonaShellRouter>
+                <FunderPersonaContainment>
                 <Routes>
                   <Route path={ROUTES.ROOT} element={<RootElement />} />
                   {/* Canonical redirect: /landing → / */}
@@ -362,9 +365,9 @@ function App() {
                   <Route path="/dashboard/*" element={<LegacyRedirect to="/desk" label="Dashboard" />} />
 
                   {/* Batch V-UI — IDV client-facing surfaces */}
-                  <Route path="/desk/idv/start" element={<RequireAuth><IdvStart /></RequireAuth>} />
+                  <Route path="/desk/idv/start" element={<RequireAuth><FunderOnlyDeskGuard><IdvStart /></FunderOnlyDeskGuard></RequireAuth>} />
                   <Route path="/admin/idv/review" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><IdvReviewQueue /></RequireAuth>} />
-                  <Route path="/desk/*" element={<Desk />} />
+                  <Route path="/desk/*" element={<FunderOnlyDeskGuard><Desk /></FunderOnlyDeskGuard>} />
                   {/* Batch 1 — Business Registry shell (M001) */}
                   <Route path="/registry" element={<RegistryLanding />} />
                   <Route path="/registry/search" element={<RegistrySearch />} />
@@ -477,11 +480,11 @@ function App() {
                   </Route>
                   <Route
                     path="/desk/compliance-cases"
-                    element={<RequireAuth><DeskComplianceCases /></RequireAuth>}
+                    element={<RequireAuth><FunderOnlyDeskGuard><DeskComplianceCases /></FunderOnlyDeskGuard></RequireAuth>}
                   />
                   <Route
                     path="/desk/compliance-cases/:reference"
-                    element={<RequireAuth><DeskComplianceCaseDetail /></RequireAuth>}
+                    element={<RequireAuth><FunderOnlyDeskGuard><DeskComplianceCaseDetail /></FunderOnlyDeskGuard></RequireAuth>}
                   />
                   <Route
                     path="/funder/compliance-summary"
@@ -541,14 +544,14 @@ function App() {
 
                   {/* P-5 Batch 5 — Phase 5: Finality, Memory and Outcome History UI surfaces */}
                   <Route path="/admin/p5-batch5/finality-memory" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch5FinalityMemory /></RequireAuth>} />
-                  <Route path="/desk/p5-batch5/finality" element={<RequireAuth><P5Batch5OrganisationFinality /></RequireAuth>} />
+                  <Route path="/desk/p5-batch5/finality" element={<RequireAuth><FunderOnlyDeskGuard><P5Batch5OrganisationFinality /></FunderOnlyDeskGuard></RequireAuth>} />
                   <Route path="/funder/p5-batch5/finality" element={<RequireAuth><P5Batch5FunderFinality /></RequireAuth>} />
 
                   {/* P-5 Batch 6 — Phase 5: Exceptions, review queues, audit UI */}
                   <Route path="/admin/p5-batch6" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch6Workbench /></RequireAuth>} />
                   <Route path="/admin/p5-batch6/exceptions/:exceptionId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch6ExceptionDetail /></RequireAuth>} />
                   <Route path="/admin/p5-batch6/exports" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch6ReportExports /></RequireAuth>} />
-                  <Route path="/desk/p5-batch6/my-exceptions" element={<RequireAuth><P5Batch6MyExceptions /></RequireAuth>} />
+                  <Route path="/desk/p5-batch6/my-exceptions" element={<RequireAuth><FunderOnlyDeskGuard><P5Batch6MyExceptions /></FunderOnlyDeskGuard></RequireAuth>} />
                   <Route path="/funder/p5-batch6/exceptions" element={<RequireAuth><P5Batch6FunderExceptions /></RequireAuth>} />
 
                   {/* P-5 Batch 7 — Phase 4: read-only role-based dashboards */}
@@ -557,7 +560,7 @@ function App() {
                   <Route path="/admin/p5-batch7/api-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7ApiDashboard /></RequireAuth>} />
                   <Route path="/admin/p5-batch7/provider-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7ProviderDashboard /></RequireAuth>} />
                   <Route path="/admin/p5-batch7/audit-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7AuditDashboard /></RequireAuth>} />
-                  <Route path="/desk/p5-batch7/org-dashboard" element={<RequireAuth><P5Batch7OrgDashboard /></RequireAuth>} />
+                  <Route path="/desk/p5-batch7/org-dashboard" element={<RequireAuth><FunderOnlyDeskGuard><P5Batch7OrgDashboard /></FunderOnlyDeskGuard></RequireAuth>} />
                   <Route path="/funder/p5-batch7/funder-dashboard" element={<RequireAuth><P5Batch7FunderDashboard /></RequireAuth>} />
 
                   {/* P-5 Batch 8 — Phase 5: provider dependency workbench (admin / compliance, read-only) */}
@@ -696,6 +699,7 @@ function App() {
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </FunderPersonaContainment>
                 </PersonaShellRouter>
                 </Suspense>
               </RouteErrorBoundary>

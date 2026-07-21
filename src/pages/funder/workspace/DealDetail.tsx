@@ -293,7 +293,7 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
               <div className="text-sm font-medium text-foreground">{s.title}</div>
               <div className="text-xs text-muted-foreground mt-0.5">{s.description}</div>
               <Badge variant="secondary" className="mt-2 text-[11px]">
-                Not yet connected
+                No linked record is available for this item.
               </Badge>
             </div>
           ))}

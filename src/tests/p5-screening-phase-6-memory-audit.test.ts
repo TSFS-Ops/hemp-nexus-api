@@ -14,10 +14,11 @@ import {
 
 const root = resolve(process.cwd());
 const migDir = resolve(root, "supabase/migrations");
+const phase6Marker = "p5scr_block_banned_memory_link_kind";
 const phase6File = readdirSync(migDir)
-  .filter((f) => f.endsWith(".sql") && f >= "20260626182000")
-  .sort()
-  .pop()!;
+.filter((f) => f.endsWith(".sql") && f >= "20260626182000")
+.sort()
+.find((f) => readFileSync(resolve(migDir, f), "utf8").includes(phase6Marker))!;
 const sql = readFileSync(resolve(migDir, phase6File), "utf8");
 const readme = readFileSync(
   resolve(root, "evidence/p5-screening-idv-provider-ready-flow/README.md"),
