@@ -567,12 +567,22 @@ Deno.serve(async (req) => {
                   p_file_sha256: fileSha256,
                   p_manifest_sha256: null,
                   p_watermark_template: renderWatermark(WATERMARK_TEMPLATE, wmVars),
+                  p_supersede: supersede,
+                  p_supersede_reason: supersedeReason,
         },
             );
                    if (sealErr) {
                            // Best-effort cleanup on seal failure so we don't leave orphan PDFs.
                      await admin.storage.from(BUCKET).remove([storagePath]).catch(() => undefined);
-                           return json({ error: "seal_failed", detail: sealErr.message }, 500);
+                           const msg = sealErr.message || "";
+                           // Map "sealed pack already exists" → 409 conflict for the UI.
+                           if (/sealed pack already exists/i.test(msg)) {
+                             return json({ error: "supersede_required", detail: msg }, 409);
+                           }
+                           if (/p_supersede_reason is required/i.test(msg)) {
+                             return json({ error: "supersede_reason_required", detail: msg }, 400);
+                           }
+                           return json({ error: "seal_failed", detail: msg }, 500);
                    }
 
       return json({
