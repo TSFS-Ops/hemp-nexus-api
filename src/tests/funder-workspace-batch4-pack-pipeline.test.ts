@@ -198,8 +198,8 @@ describe("Funder Workspace Batch 4 — client library", () => {
   it("admin client exposes generateSealedPack that invokes funder-pack-generate", () => {
     expect(ADMIN_CLIENT).toMatch(/export async function generateSealedPack/);
     expect(ADMIN_CLIENT).toMatch(/functions\.invoke\("funder-pack-generate"/);
-    // Real success gate — no fake ok.
-    expect(ADMIN_CLIENT).toMatch(/if\s*\(!data\?\.ok\)/);
+    // Real success gate — no fake ok. Accept `data` or a locally-renamed alias.
+    expect(ADMIN_CLIENT).toMatch(/if\s*\(!\w+\?\.ok\)/);
   });
 
   it("funder client exposes requestPackDownload that invokes funder-pack-download", () => {
