@@ -79,30 +79,47 @@ function DashboardBody({ orgName }: { orgName: string }) {
 
   return (
     <div className="space-y-4" data-testid="fw-funder-dashboard">
+      <TooltipProvider>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard
-          label="Active deals"
-          value={counters?.active_deals ?? active.length}
+          label="Active releases"
+          value={counters?.active_deals ?? metrics.active}
           loading={rows === null && counters === null}
+          hint="Releases assigned to your organisation whose access is currently usable — not revoked, not expired. Releases within 14 days of expiry are still counted here (they are also shown in ‘Expiring in 14 days’)."
         />
         <StatCard
           label="Expiring in 14 days"
-          value={counters?.expiring_soon ?? expiringSoon.length}
+          value={counters?.expiring_soon ?? metrics.expiring_soon}
           loading={rows === null && counters === null}
+          hint="Warning subset of Active releases. Excludes already-expired and revoked releases. These are also included in ‘Active releases’."
         />
         <StatCard
-          label="Sealed packs"
+          label="Sealed pack versions"
           value={counters?.packs_available ?? 0}
           loading={counters === null}
+          hint="Total sealed pack VERSIONS across your assigned releases. A deal with v1 and v2 counts as 2. Includes packs on revoked releases (revocation blocks download but preserves the sealed record for audit)."
         />
-        <StatCard label="Open RFIs" value={counters?.open_rfis ?? 0} loading={counters === null} />
-        <StatCard label="Answered RFIs" value={counters?.answered_rfis ?? 0} loading={counters === null} />
         <StatCard
-          label="Decisions recorded"
+          label="Open RFIs"
+          value={counters?.open_rfis ?? 0}
+          loading={counters === null}
+          hint="RFIs with status open, assigned or in-progress across all your releases. Includes RFIs on releases later revoked (server cannot post new messages once a release is inactive)."
+        />
+        <StatCard
+          label="Answered RFIs"
+          value={counters?.answered_rfis ?? 0}
+          loading={counters === null}
+          hint="RFIs whose current status is ‘answered’. Once closed or withdrawn they no longer count here."
+        />
+        <StatCard
+          label="Deals with a current decision"
           value={counters?.decisions_recorded ?? 0}
           loading={counters === null}
+          hint="Counts the current (latest) decision per release. Superseded decision versions are not double-counted."
         />
       </div>
+      </TooltipProvider>
+
 
       <Card>
         <CardHeader>
