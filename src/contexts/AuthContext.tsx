@@ -144,11 +144,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       previousOrgIdRef.current = currentOrgId;
 
-      setRoles(userRoles);
+      // Only publish a new roles array reference when the set actually
+      // changed. Otherwise every visibility/focus refresh would produce a
+      // new array identity and re-render every `useAuth()` consumer.
+      const sameRoles =
+        prev !== null &&
+        prev.length === userRoles.length &&
+        prev.every((r) => userRoles.includes(r));
+      if (!sameRoles) {
+        setRoles(userRoles);
+      }
+      lastRoleFetchAtRef.current = Date.now();
 
       if (rolesChanged || orgChanged) {
         invalidateRoleScopedCaches();
       }
+
 
       if (currentOrgId) {
         setSentryUser(userId, currentOrgId, userRoles);
