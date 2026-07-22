@@ -350,7 +350,7 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <FunderPackDownloadButton pack={p} release={release} />
+                        <FunderPackDownloadButton pack={p} release={release} role={v1Role} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -460,12 +460,22 @@ function ConsentTile({
 function FunderPackDownloadButton({
   pack,
   release,
+  role,
 }: {
   pack: PackVersionRow;
   release: DealReleaseRow;
+  role: V1Role | null;
 }) {
   const [busy, setBusy] = useState(false);
   const readiness = packDownloadReadiness(release, pack);
+
+  if (role === "external_adviser") {
+    return (
+      <Button variant="ghost" size="sm" disabled data-testid={`fw-download-disabled-${pack.id}`} title="External advisers have read-only access and cannot download packs." aria-label="Download not available for external advisers">
+      Not available
+      </Button>
+      );
+  }
 
   if (!readiness.ready) {
     return (
