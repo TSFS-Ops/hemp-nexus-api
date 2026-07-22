@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { isPublicHttpsUrl } from "../_shared/ssrf-guard.ts";
 
 /**
  * Webhook Retry Background Job
@@ -137,6 +138,9 @@ Deno.serve(async (req) => {
         const signature = await generateSignature(payloadStr, endpoint.secret_hash);
 
         // Attempt delivery
+        if (!isPublicHttpsUrl(endpoint.url)) {
+          throw new Error(`refused: webhook target is not a public https URL (${endpoint.url})`);
+        }
         const response = await fetch(endpoint.url, {
           method: "POST",
           headers: {

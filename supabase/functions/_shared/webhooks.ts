@@ -1,5 +1,6 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { decryptSecret, isEncryptedFormat } from "./webhook-crypto.ts";
+import { isPublicHttpsUrl } from "./ssrf-guard.ts";
 
 export interface WebhookPayload {
   event: string;
@@ -124,6 +125,12 @@ async function deliverWebhook(
   let errorMessage = "";
 
   try {
+    // SSRF re-validation at dispatch time — refuse to fetch if a stored URL
+    // now resolves to a private/loopback/metadata host (defence in depth in
+    // case validation was bypassed at insert time or config was tampered).
+    if (!isPublicHttpsUrl(url)) {
+      throw new Error(`refused: webhook target is not a public https URL (${url})`);
+    }
     const response = await fetch(url, {
       method: "POST",
       headers: {
