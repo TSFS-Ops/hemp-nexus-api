@@ -136,10 +136,9 @@ export default function FunderWorkspaceReleaseDetail() {
         }
         setGenerating(true);
         try {
-                const res = await generateSealedPack(
-                          releaseId,
-                          supersede ? { supersede: true, supersedeReason: supersedeReason.trim() } : undefined,
-                        );
+const res = await generateSealedPack(releaseId,
+                                                         supersede ? { supersede: true, supersedeReason: supersedeReason.trim() } : undefined,
+                                                     );
                 toast.success(`Sealed pack v${res.version} generated`);
                 setSupersedeOpen(false);
                 setSupersedeReason("");
