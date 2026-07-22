@@ -67,16 +67,19 @@ describe("Team management — optimistic UI with rollback", () => {
   });
 });
 
-describe("Team management — resend invitation is honestly stubbed", () => {
-  it("does not fabricate a resend backend call", () => {
-    // We must not silently call an admin RPC that doesn't exist.
-    // (The RPC name may appear in a TODO comment — strip comments first.)
-    const code = ORG_DETAIL.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-    expect(code).not.toMatch(/\.rpc\(["'][^"']*resend[^"']*["']/i);
-    expect(code).not.toMatch(/p5b3ResendFunder/);
-    // The button surfaces a documented TODO instead.
-    expect(ORG_DETAIL).toMatch(/Resend not yet available|pending backend/i);
-  });
+describe("Team management — resend invitation is implemented", () => {
+      it("routes through the typed RPC wrapper (never a raw .rpc() call) and surfaces success/error", () => {
+              // Resend must go through the typed wrapper (p5b3ResendFunderInvite in
+              // src/lib/p5-batch3/rpc.ts), which is the only place that calls
+              // supabase.rpc("p5b3_admin_resend_funder_invite_v1", ...). The
+              // component itself must never call .rpc() directly.
+              const code = ORG_DETAIL.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+              expect(code).not.toMatch(/\.rpc\(["'][^"']*resend[^"']*["']/i);
+              expect(ORG_DETAIL).toMatch(/p5b3ResendFunderInvite/);
+              expect(ORG_DETAIL).toMatch(/setResendingId/);
+              expect(ORG_DETAIL).toMatch(/toast\.success\([^)]*[Rr]esent/);
+              expect(ORG_DETAIL).toMatch(/toast\.error\(\(e as Error\)\.message\)/);
+      });
 });
 
 describe("Team management — empty and loading states", () => {
