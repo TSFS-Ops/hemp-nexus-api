@@ -120,9 +120,9 @@ describe("Funder Workspace Batch 1 — helpers & role mapping", () => {
   it("maps every existing p5_batch3_funder_role value to V1 labels without renaming the enum", () => {
     const mapBlock = SQL.split("funder_role_for_v1")[1] ?? "";
     expect(mapBlock).toMatch(/WHEN 'funder_org_admin' THEN 'admin'/);
-    expect(mapBlock).toMatch(/WHEN 'funder_approver'  THEN 'approver'/);
-    expect(mapBlock).toMatch(/WHEN 'funder_reviewer'  THEN 'reviewer'/);
-    expect(mapBlock).toMatch(/WHEN 'funder_viewer'    THEN 'viewer'/);
+    expect(mapBlock).toMatch(/WHEN 'funder_approver' {2}THEN 'approver'/);
+    expect(mapBlock).toMatch(/WHEN 'funder_reviewer' {2}THEN 'reviewer'/);
+    expect(mapBlock).toMatch(/WHEN 'funder_viewer' {4}THEN 'viewer'/);
     expect(mapBlock).toMatch(/WHEN 'external_adviser' THEN 'external_adviser'/);
     // Enum must not be recreated or altered.
     expect(SQL).not.toMatch(/CREATE TYPE public\.p5_batch3_funder_role/);
