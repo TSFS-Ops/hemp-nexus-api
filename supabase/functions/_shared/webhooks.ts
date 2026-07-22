@@ -125,6 +125,12 @@ async function deliverWebhook(
   let errorMessage = "";
 
   try {
+    // SSRF re-validation at dispatch time — refuse to fetch if a stored URL
+    // now resolves to a private/loopback/metadata host (defence in depth in
+    // case validation was bypassed at insert time or config was tampered).
+    if (!isPublicHttpsUrl(url)) {
+      throw new Error(`refused: webhook target is not a public https URL (${url})`);
+    }
     const response = await fetch(url, {
       method: "POST",
       headers: {
