@@ -153,7 +153,7 @@ export const FUNDER_SHELL_NAV: ShellNavGroup[] = [
   {
     label: "Evidence",
     items: [
-      { to: "/funder/evidence-pack", label: "Evidence Pack", icon: FileArchive },
+      { to: "/funder/workspace/deals", label: "Evidence Pack", icon: FileArchive },
       { to: "/funder/p5-batch2/evidence-pack", label: "Evidence Pack (P-5 B2)", icon: FileArchive },
       { to: "/funder/compliance-summary", label: "Compliance Summary", icon: ShieldCheck },
     ],
