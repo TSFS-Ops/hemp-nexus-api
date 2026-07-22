@@ -478,7 +478,7 @@ export default function FunderWorkspaceReleaseDetail() {
                                 <div className="space-y-2">
                                             <p className="text-sm">
                                                           This will supersede the current sealed pack{currentPack ? ` (v${currentPack.version})` : ""}. The
-                                                          prior version remains immutable and stays visible in the supersession history below. A written
+                                                          prior version is retained unchanged and stays visible in the supersession history below. A written
                                                           reason of at least 10 characters is required.
                                             </p>
                                             <Label htmlFor="fw-supersede-reason">Supersession reason (required)</Label>
