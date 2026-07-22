@@ -1168,7 +1168,7 @@ function FunderRecommendationsPanel({
                                       variant: "secondary",
                                       onClick: () => setSubmitting(true),
                                       "data-testid": "fw-funder-recommendation-open",
-                      },
+                      } as any,
                                   "Submit recommendation",
                                 )
                     : null,
@@ -1283,7 +1283,7 @@ function SubmitRecommendationDialog({
       { open: true, onOpenChange: onClose },
           createElement(
                   DialogContent,
-            { "data-testid": "fw-funder-recommendation-dialog" },
+            { "data-testid": "fw-funder-recommendation-dialog" } as any,
                   createElement(
                             DialogHeader,
                             null,
@@ -1342,7 +1342,7 @@ function SubmitRecommendationDialog({
                                       ),
                             createElement(
                                         Button,
-                              { onClick: submit, disabled: busy, "data-testid": "fw-funder-recommendation-submit" },
+                              { onClick: submit, disabled: busy, "data-testid": "fw-funder-recommendation-submit" } as any,
                                         busy ? "Submitting…" : "Submit",
                                       ),
                           ),
