@@ -17,6 +17,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { isPublicHttpsUrl } from "../_shared/ssrf-guard.ts";
 import {
   CLAIM_LIFECYCLE_MAX_ATTEMPTS,
   CLAIM_LIFECYCLE_WEBHOOK_EVENTS,
