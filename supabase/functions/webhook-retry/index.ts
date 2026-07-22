@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { isPublicHttpsUrl } from "../_shared/ssrf-guard.ts";
 
 /**
  * Webhook Retry Background Job
