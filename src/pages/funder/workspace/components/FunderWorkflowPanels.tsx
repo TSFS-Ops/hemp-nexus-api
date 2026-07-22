@@ -469,7 +469,8 @@ function RfiDetailDialog({
                     </div>
                     <div className="whitespace-pre-wrap">{m.message_body}</div>
                   </div>
-onClick={doClose}              )}
+                ))
+              )}
             </div>
             {mayAct && !terminal && (
               <div className="space-y-2">
