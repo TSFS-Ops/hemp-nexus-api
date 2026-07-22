@@ -173,6 +173,9 @@ Deno.serve(async (req) => {
   let success = false;
   let statusCode: number | undefined;
   try {
+    if (!isPublicHttpsUrl(endpoint.url)) {
+      throw new Error(`refused: webhook target is not a public https URL (${endpoint.url})`);
+    }
     const res = await fetch(endpoint.url, {
       method: "POST",
       headers,
