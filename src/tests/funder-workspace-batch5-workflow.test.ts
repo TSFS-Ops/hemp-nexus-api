@@ -65,6 +65,13 @@ const V1_TABLES = [
     "funder_workspace_decisions",
   ] as const;
 
+// Batch 10 — additive non-binding recommendations. Legitimately extends
+// this same client file beyond the original Batch 5 scope; see file
+// header. Not part of V1_TABLES/V1_RPCS (Batch 5), tracked separately.
+const BATCH10_TABLES = [
+      "funder_workspace_decision_recommendations",
+    ] as const;
+
 const V1_RPCS = [
     "fw_funder_create_rfi_v1",
     "fw_funder_add_rfi_message_v1",
@@ -77,6 +84,12 @@ const V1_RPCS = [
     "fw_funder_delete_note_v1",
     "fw_funder_record_decision_v1",
   ] as const;
+
+// Batch 10 — additive non-binding recommendation RPC. See BATCH10_TABLES
+// comment above; tracked separately from the original Batch 5 V1_RPCS.
+const BATCH10_RPCS = [
+      "fw_funder_submit_recommendation_v1",
+    ] as const;
 
 describe("Batch 5 — migration installs the V1 tables", () => {
     const sql = allMigrations();
@@ -185,7 +198,7 @@ describe("Batch 5 — RPC hardening", () => {
 
 describe("Batch 5 — workflow client scope", () => {
     it("only invokes approved Batch 5 RPCs", () => {
-          const approved = new Set<string>(V1_RPCS as readonly string[]);
+                  const approved = new Set<string>([...V1_RPCS, ...BATCH10_RPCS] as readonly string[]);
           const rpcCalls = [...CLIENT.matchAll(/\.rpc\("([^"]+)"/g)].map((m) => m[1]);
           for (const name of rpcCalls) {
                   expect(approved, `RPC ${name} must be an approved Batch 5 RPC`).toContain(
@@ -202,7 +215,7 @@ describe("Batch 5 — workflow client scope", () => {
                  const tables = [...CLIENT.matchAll(/["']([a-z0-9_]+)["']/g)]
                    .map((m) => m[1])
                    .filter((s) => s.startsWith("funder_workspace_"));
-                 const allowed = new Set<string>(V1_TABLES as readonly string[]);
+                             const allowed = new Set<string>([...V1_TABLES, ...BATCH10_TABLES] as readonly string[]);
                  for (const t of tables) {
                          expect(allowed, `table ${t}`).toContain(t);
                  }
