@@ -115,6 +115,9 @@ Deno.serve(async (req) => {
       const sig = await hmacSha256Hex(ep.secret_hash ?? "", `${ts}.${body}`);
 
       try {
+        if (!isPublicHttpsUrl(ep.url)) {
+          throw new Error(`refused: webhook target is not a public https URL (${ep.url})`);
+        }
         const resp = await fetch(ep.url, {
           method: "POST",
           headers: {
