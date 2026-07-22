@@ -15,6 +15,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders } from "../_shared/cors.ts";
+import { isPublicHttpsUrl } from "../_shared/ssrf-guard.ts";
 import {
   V1_WEBHOOK_AUDIT_NAMES,
   V1_WEBHOOK_MAX_ATTEMPTS,
