@@ -91,7 +91,21 @@ export async function getMyRelease(releaseId: string): Promise<DealReleaseRow | 
     .eq("id", releaseId)
     .maybeSingle();
   if (error) throw new Error(`getMyRelease: ${error.message}`);
-  return (data as DealReleaseRow | null) ?? null;
+  const row = (data as DealReleaseRow | null) ?? null;
+  if (!row) {
+    // Best-effort denial/not-found logging for later security review.
+    // Never blocks or alters the (opaque) null response to the caller.
+    void (supabase as any)
+    .rpc("fw_log_access_event_v1", {
+      p_action: "release_lookup",
+      p_object_type: "funder_deal_release",
+      p_object_id: releaseId,
+      p_result: "not_found",
+      p_reason: null,
+    })
+    .catch(() => {});
+  }
+  return row;
 }
 
 export async function listMyReleaseConsents(
