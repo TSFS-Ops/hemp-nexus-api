@@ -64,6 +64,10 @@ const pack: PackVersionRow = {
   generated_at: "",
   sealed_at: "",
   download_expires_at: null,
+  is_current: true,
+  superseded_by: null,
+  superseded_at: null,
+  supersession_reason: null,
   created_at: "",
   updated_at: "",
 };
