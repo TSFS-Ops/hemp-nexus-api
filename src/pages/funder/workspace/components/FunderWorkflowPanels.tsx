@@ -4,7 +4,7 @@
  * page. Server-side RPCs are authoritative for every mutation; UI role
  * checks are display-only.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -42,6 +42,7 @@ import {
   canCreateNote,
   canCreateRfi,
   canRecordDecision,
+    canSubmitRecommendation,
   closeRfi,
   createNote,
   createRfi,
@@ -49,16 +50,20 @@ import {
   editNote,
   listDecisions,
   listNotes,
+    listRecommendations,
   listReleaseRfis,
   listRfiMessages,
   recordDecision,
+    submitRecommendation,
   requiresDecisionReason,
   withdrawRfi,
   type DecisionRow,
+    type DecisionRecommendationRow,
   type DecisionStatus,
   type NoteRow,
   type RfiMessageRow,
   type RfiPriority,
+    type RecommendationStatus,
   type RfiRow,
   type V1Role,
 } from "@/lib/funder-workspace/workflow-client";
@@ -82,6 +87,12 @@ const DECISION_STATUS_TONE: Record<string, "default" | "secondary" | "destructiv
   approved: "default",
   declined: "destructive",
   withdrawn: "destructive",
+};
+
+const RECOMMENDATION_STATUS_TONE: Record<string, "default" | "secondary" | "destructive"> = {
+    conditional: "default",
+    approved: "default",
+    declined: "destructive",
 };
 
 function releaseIsWorkable(release: DealReleaseRow): boolean {
@@ -945,9 +956,12 @@ export function FunderDecisionPanel({
         )}
       </CardContent>
 
+      {createElement(FunderRecommendationsPanel, { release, role })}
+
       {recording && (
         <RecordDecisionDialog
           releaseId={release.id}
+                      hasCurrentDecision={current !== null}
           onClose={() => setRecording(false)}
           onSaved={() => {
             setRecording(false);
@@ -963,15 +977,31 @@ function RecordDecisionDialog({
   releaseId,
   onClose,
   onSaved,
+    hasCurrentDecision,
 }: {
   releaseId: string;
   onClose: () => void;
   onSaved: () => void;
+    hasCurrentDecision: boolean;
 }) {
   const [status, setStatus] = useState<DecisionStatus>("under_review");
   const [reason, setReason] = useState("");
   const [conditions, setConditions] = useState("");
   const [busy, setBusy] = useState(false);
+    const [supersessionReason, setSupersessionReason] = useState("");
+    const [openRfiCount, setOpenRfiCount] = useState(0);
+
+    useEffect(() => {
+          let cancelled = false;
+          void listReleaseRfis(releaseId).then((rows) => {
+                  if (cancelled) return;
+                  const openCount = rows.filter((r) => !("closed" === r.status || "withdrawn" === r.status)).length;
+                  setOpenRfiCount(openCount);
+          });
+          return () => {
+                  cancelled = true;
+          };
+    }, [releaseId]);
 
   const needsReason = requiresDecisionReason(status);
 
@@ -980,6 +1010,10 @@ function RecordDecisionDialog({
       toast.error("A written reason is required for this decision.");
       return;
     }
+        if (hasCurrentDecision && supersessionReason.trim() === "") {
+                toast.error("A supersession reason is required when replacing an existing decision.");
+                return;
+        }
     setBusy(true);
     try {
       await recordDecision({
@@ -987,6 +1021,7 @@ function RecordDecisionDialog({
         decision_status: status,
         reason: reason.trim() || null,
         conditions: conditions.trim() || null,
+                supersession_reason: hasCurrentDecision ? supersessionReason.trim() || null : null,
       });
       toast.success("Decision recorded");
       onSaved();
@@ -1003,6 +1038,18 @@ function RecordDecisionDialog({
         <DialogHeader>
           <DialogTitle>Record decision</DialogTitle>
         </DialogHeader>
+        {openRfiCount > 0 &&
+                    createElement(
+                                  Alert,
+                      { className: "mb-2" },
+                                  createElement(AlertTriangle, { className: "h-4 w-4" }),
+                                  createElement(AlertTitle, null, "Unresolved requests for information"),
+                                  createElement(
+                                                  AlertDescription,
+                                                  null,
+                                                  `${openRfiCount} request${openRfiCount === 1 ? "" : "s"} for information ${openRfiCount === 1 ? "is" : "are"} still open for this release.`,
+                                                ),
+                                )}
         <div className="space-y-2">
           <Label htmlFor="decision-status">Status</Label>
           <Select value={status} onValueChange={(v) => setStatus(v as DecisionStatus)}>
@@ -1041,6 +1088,19 @@ function RecordDecisionDialog({
               />
             </>
           )}
+          {hasCurrentDecision &&
+                      createElement(
+                                    "div",
+                                    null,
+                                    createElement(Label, { htmlFor: "decision-supersession-reason" }, "Reason for superseding prior decision (required)"),
+                                    createElement(Textarea, {
+                                                    id: "decision-supersession-reason",
+                                                    value: supersessionReason,
+                                                    onChange: (e: any) => setSupersessionReason(e.target.value),
+                                                    rows: 3,
+                                                    maxLength: 5000,
+                                    }),
+                                  )}
         </div>
         <DialogFooter>
           <DialogClose asChild>
@@ -1057,4 +1117,235 @@ function RecordDecisionDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Recommendations panel (Batch 10) — non-binding Reviewer/Approver
+// recommendations. Never gates or blocks the formal Approver decision
+// recorded above; purely advisory and always visible for context.
+// ─────────────────────────────────────────────────────────────
+function FunderRecommendationsPanel({
+    release,
+    role,
+}: {
+    release: DealReleaseRow;
+    role: V1Role | null;
+}) {
+    const [recs, setRecs] = useState<DecisionRecommendationRow[]>([]);
+    const [submitting, setSubmitting] = useState(false);
+
+    const refresh = useCallback(async () => {
+          try {
+                  setRecs(await listRecommendations(release.id));
+          } catch (e) {
+                  toast.error((e as Error).message);
+          }
+    }, [release.id]);
+
+    useEffect(() => {
+          void refresh();
+    }, [refresh]);
+
+    const workable = releaseIsWorkable(release);
+    const mayRecommend = canSubmitRecommendation(role) && workable;
+
+    return createElement(
+          "div",
+      { className: "space-y-3 mt-4", "data-testid": "fw-funder-recommendations-panel" },
+          createElement(
+                  "div",
+            { className: "flex items-center justify-between" },
+                  createElement(
+                            "div",
+                    { className: "text-sm font-medium" },
+                            "Reviewer / Approver recommendations (non-binding)",
+                          ),
+                  mayRecommend
+                    ? createElement(
+                                  Button,
+                      {
+                                      size: "sm",
+                                      variant: "secondary",
+                                      onClick: () => setSubmitting(true),
+                                      "data-testid": "fw-funder-recommendation-open",
+                      },
+                                  "Submit recommendation",
+                                )
+                    : null,
+                ),
+          recs.length === 0
+            ? createElement(
+                        "p",
+              { className: "text-sm text-muted-foreground" },
+                        "No recommendations submitted yet.",
+                      )
+            : createElement(
+                        "div",
+              { className: "space-y-2" },
+                        recs.map((r) =>
+                                      createElement(
+                                                      "div",
+                                        {
+                                                          key: r.id,
+                                                          className: "border rounded-md p-2",
+                                                          "data-testid": `fw-funder-recommendation-${r.id}`,
+                                        },
+                                                      createElement(
+                                                                        "div",
+                                                        { className: "flex items-center gap-2" },
+                                                                        createElement(
+                                                                                            Badge,
+                                                                          { variant: RECOMMENDATION_STATUS_TONE[r.recommended_status] ?? "secondary" },
+                                                                                            r.recommended_status,
+                                                                                          ),
+                                                                        createElement(
+                                                                                            "span",
+                                                                          { className: "text-xs text-muted-foreground capitalize" },
+                                                                                            r.recommended_by_role,
+                                                                                          ),
+                                                                        createElement(
+                                                                                            "span",
+                                                                          { className: "text-xs text-muted-foreground" },
+                                                                                            new Date(r.created_at).toLocaleString(),
+                                                                                          ),
+                                                                      ),
+                                                      createElement(
+                                                                        "div",
+                                                        { className: "text-sm whitespace-pre-wrap mt-1" },
+                                                                        r.reason,
+                                                                      ),
+                                                      r.conditions
+                                                        ? createElement(
+                                                                              "div",
+                                                          { className: "text-xs mt-1" },
+                                                                              "Conditions: ",
+                                                                              r.conditions,
+                                                                            )
+                                                        : null,
+                                                    ),
+                                           ),
+                      ),
+          submitting
+            ? createElement(SubmitRecommendationDialog, {
+                        releaseId: release.id,
+                        onClose: () => setSubmitting(false),
+                        onSubmitted: () => {
+                                      setSubmitting(false);
+                                      void refresh();
+                        },
+            })
+            : null,
+        );
+}
+
+function SubmitRecommendationDialog({
+    releaseId,
+    onClose,
+    onSubmitted,
+}: {
+    releaseId: string;
+    onClose: () => void;
+    onSubmitted: () => void;
+}) {
+    const [status, setStatus] = useState<RecommendationStatus>("approved");
+    const [reason, setReason] = useState("");
+    const [conditions, setConditions] = useState("");
+    const [busy, setBusy] = useState(false);
+
+    const submit = async () => {
+          if (reason.trim() === "") {
+                  toast.error("A written reason is required.");
+                  return;
+          }
+          if (status === "conditional" && conditions.trim() === "") {
+                  toast.error("Conditions are required for a conditional recommendation.");
+                  return;
+          }
+          setBusy(true);
+          try {
+                  await submitRecommendation({
+                            release_id: releaseId,
+                            recommended_status: status,
+                            reason: reason.trim(),
+                            conditions: conditions.trim() || null,
+                  });
+                  toast.success("Recommendation submitted");
+                  onSubmitted();
+          } catch (e) {
+                  toast.error((e as Error).message);
+          } finally {
+                  setBusy(false);
+          }
+    };
+
+    return createElement(
+          Dialog,
+      { open: true, onOpenChange: onClose },
+          createElement(
+                  DialogContent,
+            { "data-testid": "fw-funder-recommendation-dialog" },
+                  createElement(
+                            DialogHeader,
+                            null,
+                            createElement(DialogTitle, null, "Submit recommendation"),
+                          ),
+                  createElement(
+                            "div",
+                    { className: "space-y-2" },
+                            createElement(Label, { htmlFor: "rec-status" }, "Recommended status"),
+                            createElement(
+                                        Select,
+                              { value: status, onValueChange: (v: string) => setStatus(v as RecommendationStatus) },
+                                        createElement(
+                                                      SelectTrigger,
+                                          { id: "rec-status" },
+                                                      createElement(SelectValue, null),
+                                                    ),
+                                        createElement(
+                                                      SelectContent,
+                                                      null,
+                                                      createElement(SelectItem, { value: "conditional" }, "Conditional"),
+                                                      createElement(SelectItem, { value: "approved" }, "Approved"),
+                                                      createElement(SelectItem, { value: "declined" }, "Declined"),
+                                                    ),
+                                      ),
+                            createElement(Label, { htmlFor: "rec-reason" }, "Reason (required)"),
+                            createElement(Textarea, {
+                                        id: "rec-reason",
+                                        value: reason,
+                                        onChange: (e: any) => setReason(e.target.value),
+                                        rows: 4,
+                                        maxLength: 5000,
+                            }),
+                            status === "conditional"
+                              ? createElement(
+                                              "div",
+                                              null,
+                                              createElement(Label, { htmlFor: "rec-conditions" }, "Conditions (required)"),
+                                              createElement(Textarea, {
+                                                                id: "rec-conditions",
+                                                                value: conditions,
+                                                                onChange: (e: any) => setConditions(e.target.value),
+                                                                rows: 3,
+                                                                maxLength: 5000,
+                                              }),
+                                            )
+                              : null,
+                          ),
+                  createElement(
+                            DialogFooter,
+                            null,
+                            createElement(
+                                        DialogClose,
+                              { asChild: true },
+                                        createElement(Button, { variant: "ghost" }, "Cancel"),
+                                      ),
+                            createElement(
+                                        Button,
+                              { onClick: submit, disabled: busy, "data-testid": "fw-funder-recommendation-submit" },
+                                        busy ? "Submitting…" : "Submit",
+                                      ),
+                          ),
+                ),
+        );
 }
