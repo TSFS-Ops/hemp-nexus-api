@@ -330,7 +330,7 @@ describe("Batch 5 — Batch 1–4 preservation", () => {
 
            it("fw_admin_seal_pack_v1's legitimate Batch 12 redefinition preserves the original 6-argument call shape", () => {
                  const sql = allMigrations();
-                 const idx = sql.lastIndexOf("FUNCTION public.fw_admin_seal_pack_v1(");
+                         const idx = sql.lastIndexOf("CREATE OR REPLACE FUNCTION public.fw_admin_seal_pack_v1(");
                  expect(idx, "latest fw_admin_seal_pack_v1 definition present").toBeGreaterThan(-1);
                  const block = sql.slice(idx, idx + 2000);
                  expect(block).toMatch(/p_release_id uuid/);
