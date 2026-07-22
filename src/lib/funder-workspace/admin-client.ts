@@ -87,6 +87,30 @@ export async function getFunderOrganisation(id: string): Promise<FunderOrganisat
     return must(data as FunderOrganisationRow | null, error, "getFunderOrganisation");
 }
 
+// --- Funder users (Team Management) ---
+// Read-only here: all mutations (invite / assign-role / activate /
+// deactivate) continue to route through the existing P-5 Batch 3 admin
+// RPCs and the existing P-5 Batch 3 admin console, per "do not create
+// parallel implementations". This lets the V1 admin console display the
+// current team for an organisation without duplicating write logic.
+export interface FunderUserSummaryRow {
+    id: string;
+    email: string;
+    display_name: string | null;
+    role: string;
+    status: "invited" | "active" | "deactivated";
+    created_at: string;
+}
+
+export async function listFunderUsersForOrg(organisationId: string): Promise<FunderUserSummaryRow[]> {
+    const { data, error } = await (supabase as any)
+    .from("p5_batch3_funder_users")
+    .select("id, email, display_name, role, status, created_at")
+    .eq("funder_organisation_id", organisationId)
+    .order("created_at", { ascending: false });
+    return must(data as FunderUserSummaryRow[] | null, error, "listFunderUsersForOrg");
+}
+
 // ─── Deal releases ───────────────────────────
 
 export interface DealReleaseWithOrg extends DealReleaseRow {
