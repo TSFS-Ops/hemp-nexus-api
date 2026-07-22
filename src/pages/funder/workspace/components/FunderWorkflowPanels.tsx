@@ -469,8 +469,7 @@ function RfiDetailDialog({
                     </div>
                     <div className="whitespace-pre-wrap">{m.message_body}</div>
                   </div>
-                ))
-              )}
+onClick={doClose}              )}
             </div>
             {mayAct && !terminal && (
               <div className="space-y-2">
@@ -490,7 +489,7 @@ function RfiDetailDialog({
                   >
                     Send reply
                   </Button>
-                  {mayAct && (
+                  {mayAct && rfi?.status === "answered" && (
                     <Button variant="secondary" onClick={doClose} disabled={busy}>
                       Close request
                     </Button>
