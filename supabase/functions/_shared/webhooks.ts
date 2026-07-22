@@ -1,5 +1,6 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { decryptSecret, isEncryptedFormat } from "./webhook-crypto.ts";
+import { isPublicHttpsUrl } from "./ssrf-guard.ts";
 
 export interface WebhookPayload {
   event: string;
