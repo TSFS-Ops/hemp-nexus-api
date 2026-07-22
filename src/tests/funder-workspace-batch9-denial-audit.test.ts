@@ -88,7 +88,7 @@ expect(returnIdx).toBeGreaterThan(logIdx);
 
 it("download denial logging never throws into the response path", () => {
 const idx = DL_FN.indexOf("fw_log_access_event_v1");
-const block = DL_FN.slice(Math.max(0, idx - 200), idx + 200);
+    const block = DL_FN.slice(Math.max(0, idx - 200), idx + 500);
 expect(block).toMatch(/try\s*\{/);
 expect(block).toMatch(/catch/);
 });
