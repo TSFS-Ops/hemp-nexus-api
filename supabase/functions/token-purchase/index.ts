@@ -625,6 +625,75 @@ async function _serve(req: Request): Promise<Response> {
     }
 
     // ============================================================
+    // PAYSTACK ADMIN-ONLY HARDENING (this phase).
+    //
+    // Product rule: PayFast is the only customer-facing payment
+    // provider. Paystack checkout initiation remains admin-only /
+    // internal / legacy. PAYSTACK_PUBLIC_ENABLED=false already hides
+    // the button in PaymentMethodPicker.tsx, but UI hiding alone is
+    // not a security boundary -- a non-admin caller could still POST
+    // directly to this endpoint. We re-check server-side here, using
+    // the same `has_role` SECURITY DEFINER RPC + platform_admin role
+    // already used by the PayFast admin-only sandbox gate
+    // (supabase/functions/payfast-checkout-sandbox/index.ts ->
+    // its shared PayFast checkout helper module).
+    //
+    // This guard runs BEFORE any idempotency-key reservation, BEFORE
+    // any Paystack API call, and BEFORE any token_purchases row is
+    // written, so a rejected (403) call leaves no trace other than a
+    // best-effort audit log entry.
+    //
+    // Scope: this guard applies ONLY to new Paystack checkout
+    // initiation below. It does NOT run for /verify, /webhook,
+    // /packages, or /entity -- those routes already returned above --
+    // so existing/in-flight Paystack transactions, refunds, and
+    // disputes are completely unaffected. PayFast has its own,
+    // separate edge functions and is not touched by this guard.
+    // ============================================================
+    {
+      const { data: isPlatformAdminRpc, error: roleCheckError } = await supabase.rpc("has_role", {
+        _user_id: userData.user.id,
+        _role: "platform_admin",
+      });
+      if (roleCheckError) {
+        console.error("[token-purchase] platform_admin role check failed:", roleCheckError);
+        return new Response(
+          JSON.stringify({
+            error: "ADMIN_CHECK_FAILED",
+            code: "admin_check_failed",
+            message: "Could not verify admin status. Please try again shortly.",
+          }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const isPlatformAdmin = isPlatformAdminRpc === true;
+      if (!isPlatformAdmin) {
+        console.log(`[token-purchase] Paystack initiation blocked: caller ${userData.user.id} is not platform_admin`);
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: profile.org_id,
+            actor_user_id: userData.user.id,
+            action: "credits.purchase_initiation_blocked",
+            entity_type: "token_purchase",
+            metadata: {
+              provider: "paystack",
+              reason: "not_admin",
+              client_ip: req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
+            },
+          });
+        } catch (_auditErr) { /* best-effort audit; never blocks the 403 */ }
+        return new Response(
+          JSON.stringify({
+            error: "PAYSTACK_ADMIN_ONLY",
+            code: "not_admin",
+            message: "Paystack checkout is admin-only/internal and is not available to standard customers.",
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // ============================================================
     // SERVER-SIDE BILLING AVAILABILITY GUARD (defence in depth).
     //
     // While Paystack USD settlement is being enabled, the platform-wide
@@ -1462,6 +1531,119 @@ async function handleChargeSuccess(
   // If no initiation row was found, we still process (pre-webhook-era
   // settlements can land legitimately) but flag it via metadata below.
 
+
+  // -- Stored-purchase validation (Paystack admin-only hardening) --
+  // Cross-check the incoming settlement against the token_purchases
+  // row created at checkout initiation (Batch C -- Fix 3 insert,
+  // above). This closes a gap where a webhook carrying
+  // complete-looking metadata (org_id + credits) but NO backing
+  // purchase record would previously still be credited. Lookup is
+  // by provider_reference first, then the legacy paystack_reference
+  // column (same two-step lookup as Recovery A above).
+  //
+  // Absence of a row is NOT itself rejected -- pre-Batch-C
+  // historical settlements may legitimately lack one, and the
+  // missing-metadata / initiation-audit-row containment above
+  // already covers that case. But if a row IS found, its provider,
+  // status, token_amount, amount_usd, currency, org_id and user_id
+  // must all be consistent with what we are about to credit. Any
+  // mismatch is rejected: no credit, no completion, a visible audit
+  // + admin_risk_items row, and a normal 200 return so Paystack
+  // never retry-storms.
+  {
+    let storedPurchase: {
+      provider?: string;
+      status?: string;
+      token_amount?: number;
+      amount_usd?: number;
+      currency?: string;
+      org_id?: string;
+      user_id?: string;
+    } | null = null;
+    {
+      const { data: spByProvider } = await supabase
+        .from("token_purchases")
+        .select("provider, status, token_amount, amount_usd, currency, org_id, user_id")
+        .eq("provider_reference", reference)
+        .maybeSingle();
+      storedPurchase = spByProvider ?? null;
+      if (!storedPurchase) {
+        const { data: spByPaystack } = await supabase
+          .from("token_purchases")
+          .select("provider, status, token_amount, amount_usd, currency, org_id, user_id")
+          .eq("paystack_reference", reference)
+          .maybeSingle();
+        storedPurchase = spByPaystack ?? null;
+      }
+    }
+
+    if (storedPurchase) {
+      const ELIGIBLE_STATUSES = new Set(["pending", "completed"]);
+      const storedMismatch: string[] = [];
+      if (storedPurchase.provider && storedPurchase.provider !== "paystack") {
+        storedMismatch.push(`provider expected=paystack stored=${storedPurchase.provider}`);
+      }
+      if (storedPurchase.status && !ELIGIBLE_STATUSES.has(storedPurchase.status)) {
+        storedMismatch.push(`status_not_eligible stored=${storedPurchase.status}`);
+      }
+      if (storedPurchase.token_amount != null && Number(storedPurchase.token_amount) !== Number(credits)) {
+        storedMismatch.push(`token_amount expected=${storedPurchase.token_amount} settled=${credits}`);
+      }
+      if (storedPurchase.org_id && storedPurchase.org_id !== orgId) {
+        storedMismatch.push(`org_id expected=${storedPurchase.org_id} settled=${orgId}`);
+      }
+      if (storedPurchase.user_id && userId && storedPurchase.user_id !== userId) {
+        storedMismatch.push(`user_id expected=${storedPurchase.user_id} settled=${userId}`);
+      }
+      if (storedPurchase.currency) {
+        const settledCurrencyCheck = (data.currency as string) || (metadata.currency as string | undefined) || "USD";
+        if (storedPurchase.currency.toUpperCase() !== settledCurrencyCheck.toUpperCase()) {
+          storedMismatch.push(`currency expected=${storedPurchase.currency} settled=${settledCurrencyCheck}`);
+        }
+      }
+      if (storedPurchase.amount_usd != null) {
+        const settledUsdCheck = Number(metadata.price_usd ?? data.amount / 100);
+        if (Number.isFinite(settledUsdCheck) && Math.abs(Number(storedPurchase.amount_usd) - settledUsdCheck) > 0.01) {
+          storedMismatch.push(`amount_usd expected=${storedPurchase.amount_usd} settled=${settledUsdCheck}`);
+        }
+      }
+
+      if (storedMismatch.length > 0) {
+        console.error(`[Webhook] Rejecting charge.success ${reference}: stored-purchase mismatch: ${storedMismatch.join("; ")}`);
+        await supabase.from("audit_logs").insert({
+          org_id: orgId,
+          action: "credits.purchase_rejected",
+          entity_type: "token_balance",
+          metadata: {
+            payment_reference: reference,
+            reason: "stored_purchase_mismatch",
+            mismatches: storedMismatch,
+          },
+        });
+        const dedupStoredMismatch = `payment_stored_purchase_mismatch:${reference}`;
+        const { data: existingStoredMismatchRisk } = await supabase
+          .from("admin_risk_items")
+          .select("id")
+          .eq("dedup_key", dedupStoredMismatch)
+          .maybeSingle();
+        if (!existingStoredMismatchRisk) {
+          await supabase.from("admin_risk_items").insert({
+            kind: "payment_stored_purchase_mismatch",
+            dedup_key: dedupStoredMismatch,
+            title: `Paystack settlement does not match stored purchase: ${reference}`,
+            description: storedMismatch.join("; "),
+            severity: "high",
+            status: "open",
+            metadata: {
+              provider_reference: reference,
+              mismatches: storedMismatch,
+            },
+          });
+        }
+        return;
+      }
+    }
+  }
   // ── D-01 idempotency (finalised state) ──
   // We treat `action_type='credit_purchase'` as the *finalised* settlement
   // marker. `atomic_paid_credit_purchase` is itself idempotent on
