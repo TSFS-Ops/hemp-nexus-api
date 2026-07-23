@@ -256,9 +256,9 @@ describe("Phase 2C: successful sandbox initiation", () => {
     expect(names).toContain("m_payment_id");
     expect(names).toContain("amount");
     expect(names).toContain("signature");
-    // merchant_key MUST NOT be in the returned form fields (passphrase
-    // must never appear anywhere in the response).
-    expect(names).not.toContain("merchant_key");
+    // merchant_key IS required in the returned form fields -- PayFast needs
+    // it (alongside merchant_id) to identify the merchant account. Only the
+    expect(names).toContain("merchant_key"); // required by PayFast; passphrase (below) is the true secret
     expect(names).not.toContain("passphrase");
   });
 

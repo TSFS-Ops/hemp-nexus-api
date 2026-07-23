@@ -167,6 +167,17 @@ export function verifyPayfastSignatureFromRawBody(
   if (!providedSignature || !rawBody) return false;
   const sigIdx = rawBody.lastIndexOf("&signature=");
   const head = sigIdx >= 0 ? rawBody.slice(0, sigIdx) : rawBody;
+
+  // Defensive: this fallback re-derives the signature from the raw body to
+  // avoid re-encoding drift, but it must only ever authenticate a body where
+  // `signature` is genuinely the trailing field. If any additional data
+  // follows the signature value (e.g. an appended or duplicated field), the
+  // body was altered after signing and must be rejected, not silently
+  // accepted.
+  if (sigIdx >= 0) {
+    const tail = rawBody.slice(sigIdx + "&signature=".length);
+    if (tail.toLowerCase() !== providedSignature.toLowerCase()) return false;
+  }
   const base = passphrase && passphrase.length > 0
     ? `${head}&passphrase=${pfUrlEncode(passphrase)}`
     : head;

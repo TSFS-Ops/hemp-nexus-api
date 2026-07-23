@@ -83,8 +83,13 @@ describe("Phase 2C: PayFast remains NOT live, Paystack untouched", () => {
   it("edge wrapper does not reference PAYSTACK_ secrets", () => {
     expect(EDGE).not.toMatch(/PAYSTACK_/);
   });
-  it("helper strips merchant_key from the returned form fields", () => {
-    expect(HELPER).toMatch(/k !== "merchant_key"/);
+  it("helper never returns the passphrase in form fields (merchant_key is required by PayFast and is kept)", () => {
+    // The merchant passphrase is a private signing secret and must never be
+    // surfaced in the response. merchant_key, by contrast, is a public
+    // identifier PayFast requires as a submitted form field, so it is
+    // intentionally NOT filtered out.
+    expect(HELPER).not.toMatch(/\["passphrase"/);
+    expect(HELPER).toMatch(/safeFields\s*=\s*signed\.fields\.map/);
   });
   it("no customer-facing PayFast button exists in the frontend", () => {
     // Allow PayFast references only in tests/docs/migrations/types and
