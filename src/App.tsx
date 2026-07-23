@@ -70,6 +70,7 @@ const DocsMatches = lazy(() => import("@/pages/docs/Matches"));
 const DocsCounterparties = lazy(() => import("@/pages/docs/Counterparties"));
 const DocsEvidence = lazy(() => import("@/pages/docs/Evidence"));
 const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
+const AuditExport = lazy(() => import("@/pages/AuditExport"));
 const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/CounterpartyRatingMethodology"));
 const Status = lazy(() => import("@/pages/Status"));
 const Trust = lazy(() => import("@/pages/Trust"));
