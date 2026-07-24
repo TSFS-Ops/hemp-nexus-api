@@ -438,13 +438,16 @@ END $$;
 -- AREA B -- role / RLS enforcement on public.payment_settlements
 -- ============================================================================
 -- Pattern used throughout this section: capture any fixture ids needed
--- while still running as the postgres superuser, set the simulated-identity
--- GUC (session-level, unaffected by SET ROLE), THEN switch Postgres role via
--- EXECUTE 'SET ROLE ...', run exactly the statement under test, EXECUTE
--- 'RESET ROLE' back to postgres, and only then record the result. This
--- keeps every assertion running under the real Postgres privilege system
--- (table GRANTs + RLS policies) rather than under the superuser, which
--- would silently bypass both.
+-- while still running as the postgres superuser (DECLARE ... := pg_temp.fid(...)
+-- is evaluated at block entry, before any statement in the body runs), set
+-- the simulated-identity GUC (session-level, unaffected by SET ROLE), THEN
+-- switch Postgres role via EXECUTE 'SET ROLE ...', run exactly the statement
+-- under test, EXECUTE 'RESET ROLE' back to postgres, and only then record
+-- the result. pg_temp is the postgres superuser's own session-temp schema,
+-- so it must never be queried again once the role has been switched away
+-- from postgres -- this keeps every assertion running under the real
+-- Postgres privilege system (table GRANTs + RLS policies) rather than
+-- silently bypassing it.
 
 -- Anonymous: no GRANTs at all on the table (REVOKE ALL ... FROM anon in the
 -- migration) -> any query must fail with permission denied, not merely
@@ -526,13 +529,17 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM pg_temp.record_result('B', 'ordinary customer cannot UPDATE payment_settlements directly', false, SQLERRM);
 END $$;
 
--- platform_admin: allowed read path via RLS.
+-- platform_admin: allowed read path via RLS. v_ps captured BEFORE the role
+-- switch (see harness-pattern note above) -- querying pg_temp.fixture_ids
+-- as 'authenticated' would itself fail with permission denied and produce a
+-- false-for-the-wrong-reason result.
 DO $$
-DECLARE v_count int;
+DECLARE v_ps uuid := pg_temp.fid('ps_completed_1');
+v_count int;
 BEGIN
   CALL pg_temp.act_as('aaaaaaaa-0000-0000-0000-000000000001'::uuid);
   EXECUTE 'SET ROLE authenticated';
-  SELECT count(*) INTO v_count FROM public.payment_settlements WHERE id = pg_temp.fid('ps_completed_1');
+  SELECT count(*) INTO v_count FROM public.payment_settlements WHERE id = v_ps;
   EXECUTE 'RESET ROLE';
   IF v_count = 1 THEN
     PERFORM pg_temp.record_result('B', 'platform_admin can read payment_settlements via RLS', true);
@@ -546,11 +553,12 @@ END $$;
 
 -- auditor: allowed read path via RLS, but no write GRANT (read-only).
 DO $$
-DECLARE v_count int;
+DECLARE v_ps uuid := pg_temp.fid('ps_completed_1');
+v_count int;
 BEGIN
   CALL pg_temp.act_as('aaaaaaaa-0000-0000-0000-000000000002'::uuid);
   EXECUTE 'SET ROLE authenticated';
-  SELECT count(*) INTO v_count FROM public.payment_settlements WHERE id = pg_temp.fid('ps_completed_1');
+  SELECT count(*) INTO v_count FROM public.payment_settlements WHERE id = v_ps;
   EXECUTE 'RESET ROLE';
   IF v_count = 1 THEN
     PERFORM pg_temp.record_result('B', 'auditor can read payment_settlements via RLS', true);
@@ -691,7 +699,16 @@ BEGIN
   END;
 END $$;
 
--- exception requires reason: success path + risk item created inline
+-- exception requires reason: success path + risk item created inline.
+-- KNOWN BUG (pre-existing, in PR #31's own payment_settlement_mark_v1, NOT
+-- in this proof harness): admin_risk_items_dedup_key_uniq is a PARTIAL
+-- unique index (WHERE dedup_key IS NOT NULL), but the RPC's
+-- "ON CONFLICT (dedup_key) DO UPDATE ..." clause has no matching WHERE
+-- clause, so Postgres cannot use that partial index as the arbiter and
+-- raises "there is no unique or exclusion constraint matching the ON
+-- CONFLICT specification". This is expected to FAIL until PR #31 either
+-- adds "ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO UPDATE ..."
+-- or the index is made non-partial. See the accompanying report.
 DO $$
 DECLARE v_status text; v_risk_count int;
 BEGIN
@@ -706,7 +723,7 @@ BEGIN
     PERFORM pg_temp.record_result('D', 'platform_admin can mark exception with reason; inline risk item created', false, 'status=' || v_status || ' risk_count=' || v_risk_count);
   END IF;
 EXCEPTION WHEN OTHERS THEN
-  PERFORM pg_temp.record_result('D', 'platform_admin can mark exception with reason; inline risk item created', false, SQLERRM);
+  PERFORM pg_temp.record_result('D', 'platform_admin can mark exception with reason; inline risk item created', false, 'BUG (pre-existing in PR #31): ' || SQLERRM);
 END $$;
 
 -- exception without reason must be rejected
@@ -742,13 +759,15 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM pg_temp.record_result('D', 'add_note appends rather than overwrites; before/after status captured in admin_audit_logs.details', false, SQLERRM);
 END $$;
 
--- ordinary customer cannot call the update RPC
+-- ordinary customer cannot call the update RPC. v_ps captured BEFORE the
+-- role switch -- see AREA B harness-pattern note.
 DO $$
+DECLARE v_ps uuid := pg_temp.fid('ps_customer_denied');
 BEGIN
   CALL pg_temp.act_as('aaaaaaaa-0000-0000-0000-000000000003'::uuid);
   EXECUTE 'SET ROLE authenticated';
   BEGIN
-    PERFORM public.payment_settlement_mark_v1(pg_temp.fid('ps_customer_denied'), 'confirm', 'X', NULL, NULL);
+    PERFORM public.payment_settlement_mark_v1(v_ps, 'confirm', 'X', NULL, NULL);
     EXECUTE 'RESET ROLE';
     PERFORM pg_temp.record_result('D', 'ordinary customer cannot call payment_settlement_mark_v1', false, 'RPC unexpectedly succeeded');
   EXCEPTION WHEN OTHERS THEN
@@ -760,13 +779,15 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM pg_temp.record_result('D', 'ordinary customer cannot call payment_settlement_mark_v1', false, SQLERRM);
 END $$;
 
--- auditor cannot call the update RPC (read-only role)
+-- auditor cannot call the update RPC (read-only role). v_ps captured BEFORE
+-- the role switch -- see AREA B harness-pattern note.
 DO $$
+DECLARE v_ps uuid := pg_temp.fid('ps_auditor_denied');
 BEGIN
   CALL pg_temp.act_as('aaaaaaaa-0000-0000-0000-000000000002'::uuid);
   EXECUTE 'SET ROLE authenticated';
   BEGIN
-    PERFORM public.payment_settlement_mark_v1(pg_temp.fid('ps_auditor_denied'), 'confirm', 'X', NULL, NULL);
+    PERFORM public.payment_settlement_mark_v1(v_ps, 'confirm', 'X', NULL, NULL);
     EXECUTE 'RESET ROLE';
     PERFORM pg_temp.record_result('D', 'auditor cannot call payment_settlement_mark_v1', false, 'RPC unexpectedly succeeded');
   EXCEPTION WHEN OTHERS THEN
@@ -914,6 +935,12 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM pg_temp.record_result('F', 'area F missing-settlement fixture created (48h-old completed purchase, no settlement row)', false, SQLERRM);
 END $$;
 
+-- KNOWN BUG (pre-existing, in PR #31's own detect_payment_settlement_risks_v1,
+-- NOT in this proof harness): same partial-unique-index / ON CONFLICT
+-- incompatibility described in AREA D's exception-marking check above. Both
+-- INSERT ... ON CONFLICT (dedup_key) statements in this RPC hit the same
+-- "no unique or exclusion constraint matching the ON CONFLICT specification"
+-- error. Expected to FAIL until PR #31 is fixed. See the accompanying report.
 DO $$
 DECLARE v_first int; v_second int;
 v_overdue_count int; v_missing_count int;
@@ -944,8 +971,8 @@ BEGIN
     PERFORM pg_temp.record_result('F', 'risk detection is idempotent/deduplicated on re-run (same dedup_key, no duplicate rows)', false, 'overdue_count=' || v_overdue_count || ' missing_count=' || v_missing_count);
   END IF;
 EXCEPTION WHEN OTHERS THEN
-  PERFORM pg_temp.record_result('F', 'overdue expected-settlement and paid-no-settlement-record are both detected', false, SQLERRM);
-  PERFORM pg_temp.record_result('F', 'risk detection is idempotent/deduplicated on re-run (same dedup_key, no duplicate rows)', false, 'not reached: ' || SQLERRM);
+  PERFORM pg_temp.record_result('F', 'overdue expected-settlement and paid-no-settlement-record are both detected', false, 'BUG (pre-existing in PR #31): ' || SQLERRM);
+  PERFORM pg_temp.record_result('F', 'risk detection is idempotent/deduplicated on re-run (same dedup_key, no duplicate rows)', false, 'not reached: BUG (pre-existing in PR #31): ' || SQLERRM);
 END $$;
 
 -- Ordinary customer cannot run risk detection (admin-only, same as
@@ -1038,13 +1065,15 @@ END $$;
 -- / AREA F token_purchases rows have been touched by anything except their
 -- own initial INSERT (updated_at should equal created_at for every one of
 -- them, since only an UPDATE would move updated_at away from created_at via
--- trg_token_purchases_updated_at).
+-- trg_token_purchases_updated_at). NOTE: parentheses around the OR are
+-- required -- AND binds tighter than OR in SQL, so without them this would
+-- incorrectly count every 'PF-D-%' row regardless of whether it was mutated.
 DO $$
 DECLARE v_bad int;
 BEGIN
   SELECT count(*) INTO v_bad
   FROM public.token_purchases
-  WHERE provider_reference LIKE 'PF-D-%' OR provider_reference LIKE 'PF-F-%'
+  WHERE (provider_reference LIKE 'PF-D-%' OR provider_reference LIKE 'PF-F-%')
   AND updated_at <> created_at;
   IF v_bad = 0 THEN
     PERFORM pg_temp.record_result('G', 'admin-update / risk-detection RPCs never UPDATE token_purchases (updated_at still equals created_at)', true);
