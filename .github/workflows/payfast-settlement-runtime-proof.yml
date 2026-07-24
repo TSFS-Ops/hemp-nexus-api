@@ -24,14 +24,15 @@
 # executed by PostgREST/GoTrue, real PayFast ITN traffic, browser sessions,
 # or production data behaviour.
 #
-# Known, pre-existing, unrelated environment gap: plain postgres:15 does not
-# have the pg_cron extension installed (Supabase-hosted Postgres does). Some
-# older migrations in this repository call CREATE EXTENSION pg_cron / cron
-# .schedule(...) for scheduled jobs unrelated to payment_settlements. The
-# migration-apply step below tolerates ONLY that specific, named failure
-# (logging it loudly as a known gap) and hard-fails on any other migration
-# error, so this remains fail-closed for anything that could plausibly be
-# related to PR #31.
+# Known, pre-existing, unrelated environment gaps: plain postgres:15 lacks
+# several Supabase-platform-only features that some older, unrelated
+# migrations in this repository depend on (pg_cron scheduling, pg_net HTTP
+# calls, the pg_graphql/pgjwt/supabase_vault extensions, and the built-in
+# supabase_realtime publication used for realtime replication). The
+# migration-apply step below tolerates ONLY these specific, named,
+# Supabase-platform gaps (logging each one loudly as a known gap) and
+# hard-fails on any other migration error, so this remains fail-closed for
+# anything that could plausibly be related to PR #31 / payment_settlements.
 #
 # The final gate step in the proof SQL itself raises an exception (non-zero
 # psql exit) if any individual check failed, so a green job status here is a
@@ -159,6 +160,14 @@ jobs:
           set -e
           shopt -s nullglob
           : > proof-artifact/20-migrate.txt
+          KNOWN_GAP_PATTERNS=(
+            'extension "pg_cron" is not available'
+            'extension "pg_net" is not available'
+            'extension "pgjwt" is not available'
+            'extension "pg_graphql" is not available'
+            'extension "supabase_vault" is not available'
+            'publication "supabase_realtime" does not exist'
+          )
           for f in supabase/migrations/*.sql; do
             echo "-- Applying: $f" | tee -a proof-artifact/20-migrate.txt
             set +e
@@ -167,9 +176,15 @@ jobs:
             set -e
             cat /tmp/mig_out.txt | tee -a proof-artifact/20-migrate.txt
             if [ $status -ne 0 ]; then
-              if grep -q 'extension "pg_cron" is not available' /tmp/mig_out.txt; then
-                echo "KNOWN_ENV_GAP: pg_cron not installed on plain postgres:15 (pre-existing, unrelated to PR #31) -- tolerated, continuing" | tee -a proof-artifact/20-migrate.txt
-              else
+              known=0
+              for pat in "${KNOWN_GAP_PATTERNS[@]}"; do
+                if grep -qF "$pat" /tmp/mig_out.txt; then
+                  known=1
+                  echo "KNOWN_ENV_GAP ($pat): pre-existing Supabase-platform-only dependency, unrelated to PR #31 -- tolerated, continuing" | tee -a proof-artifact/20-migrate.txt
+                  break
+                fi
+              done
+              if [ "$known" -eq 0 ]; then
                 echo "UNEXPECTED_MIGRATION_FAILURE in $f (exit=$status)" | tee -a proof-artifact/20-migrate.txt
                 exit "$status"
               fi
