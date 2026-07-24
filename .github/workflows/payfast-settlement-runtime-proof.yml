@@ -31,19 +31,20 @@
 # pgjwt, pg_graphql, pgmq, supabase_vault (including vault.decrypted_secrets),
 # the "realtime" schema, and the built-in supabase_realtime publication.
 # A handful of older migrations also assume specific seed/production rows
-# already exist (three narrowly-named foreign-key violations on org_id) or
-# embed a self-contained fixture assertion unrelated to payments ("Test
-# prerequisite failed: Dove profile not found"). Each migration file is
-# applied WITHOUT ON_ERROR_STOP, matching psql's default behaviour of
-# continuing past an individual failing statement to the next statement in
-# the same file -- this avoids a single known, unrelated, environment-only
-# statement failure truncating the rest of that migration file, which could
-# otherwise hide real schema this proof depends on. After all migrations are
-# applied, the full combined log is scanned for every "ERROR:" line; any
-# such line is required to match one of the specific, named, known gaps
-# above, or the job fails closed. This keeps the job fail-closed for
-# anything that could plausibly be related to PR #31 / payment_settlements
-# while tolerating only named, pre-existing, environment-only gaps.
+# already exist (narrowly-named foreign-key / not-null violations on
+# org_id for four unrelated tables) or embed a self-contained fixture
+# assertion unrelated to payments ("Test prerequisite failed: Dove profile
+# not found"). Each migration file is applied WITHOUT ON_ERROR_STOP,
+# matching psql's default behaviour of continuing past an individual
+# failing statement to the next statement in the same file -- this avoids
+# a single known, unrelated, environment-only statement failure truncating
+# the rest of that migration file, which could otherwise hide real schema
+# this proof depends on. After all migrations are applied, the full
+# combined log is scanned for every "ERROR:" line; any such line is
+# required to match one of the specific, named, known gaps above, or the
+# job fails closed. This keeps the job fail-closed for anything that could
+# plausibly be related to PR #31 / payment_settlements while tolerating
+# only named, pre-existing, environment-only gaps.
 #
 # The final gate step in the proof SQL itself raises an exception (non-zero
 # psql exit) if any individual behavioural check failed, so a green job
@@ -201,6 +202,7 @@ jobs:
             'api_request_logs_org_id_fkey'
             'org_sso_configs_org_id_fkey'
             'compliance_cases_org_id_fkey'
+            'null value in column "org_id" of relation "audit_logs"'
           )
 
           grep -n 'ERROR:' proof-artifact/20-migrate.txt > /tmp/all_errors.txt || true
