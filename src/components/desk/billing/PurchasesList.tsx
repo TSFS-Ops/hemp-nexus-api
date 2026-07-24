@@ -7,10 +7,23 @@
  * refund_request). The authoritative classification (within-window,
  * already-burned, expired) is performed server-side by the
  * `request_refund` RPC.
+ *
+ * Trust boundary
+ * --------------
+ * PayFast is the only payment provider normal customers should see.
+ * Legacy rows may still carry a Paystack provider/reference from before
+ * the PayFast migration. Non-admin viewers never see the literal word
+ * "Paystack", a raw paystack_reference value, or customer-facing
+ * "settlement" wording -- legacy rows are shown with neutral "card
+ * checkout" wording and a masked payment reference instead. Platform
+ * admins retain full internal visibility (raw reference, provider name,
+ * and settlement-status wording), clearly marked with
+ * `data-admin-only="true"`.
  */
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +38,7 @@ interface PurchaseRow {
   status: string;
   created_at: string;
   paystack_reference: string;
-  // PayFast Phase 2A — provider-agnostic identity. Both nullable so
+  // PayFast Phase 2A -- provider-agnostic identity. Both nullable so
   // historical rows that pre-date the migration still render correctly.
   provider?: string | null;
   provider_reference?: string | null;
@@ -69,8 +82,17 @@ interface PurchasesListProps {
   orgId: string | undefined;
 }
 
+// Non-admin customers never see a raw legacy paystack_reference value.
+// Only the last 4 characters are shown, prefixed with a masked marker.
+function maskPaymentReference(ref: string | null | undefined): string {
+  if (!ref) return "••••";
+  const tail = ref.length > 4 ? ref.slice(-4) : ref;
+  return "••••" + tail;
+}
+
 export function PurchasesList({ orgId }: PurchasesListProps) {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [activePurchase, setActivePurchase] = useState<PurchaseRow | null>(null);
 
   const { data } = useQuery({
@@ -134,21 +156,33 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                   blockedStatus === "blocked_credits_used"
                     ? "Refund unavailable - credits already used"
                     : blockedStatus === "blocked_expired"
-                      ? "Refund unavailable - outside window"
-                      : null;
+                    ? "Refund unavailable - outside window"
+                    : null;
                 const resolved = !hasPending ? resolvedMap.get(p.id) : undefined;
+                const isLegacyPaystack = p.provider !== "payfast";
                 const resolvedLabel =
                   resolved?.status === "approved"
-                    ? "Refund approved — provider settlement pending"
+                    ? isAdmin
+                      ? "Refund approved - provider settlement pending"
+                      : "Refund approved"
                     : resolved?.status === "declined"
-                      ? "Refund declined"
-                      : resolved?.status === "superseded"
-                        ? "Refund superseded"
-                        : null;
-                const resolvedTooltipPrefix =
-                  resolved?.status === "approved"
-                    ? "Internal approval recorded. Awaiting payment-provider (Paystack) confirmation that funds have been returned. "
-                    : "";
+                    ? "Refund declined"
+                    : resolved?.status === "superseded"
+                    ? "Refund superseded"
+                    : null;
+                const resolvedTooltip = (() => {
+                  if (!resolved) return undefined;
+                  if (resolved.status === "approved" && !isAdmin) {
+                    return "Your refund has been approved. Funds are returned by the original payment method and may take several business days to appear.";
+                  }
+                  const prefix =
+                    resolved.status === "approved" && isAdmin
+                      ? "Internal approval recorded. Awaiting payment-provider (Paystack) confirmation that funds have been returned. "
+                      : "";
+                  return resolved.decision_reason
+                    ? prefix + resolvedLabel + " - " + resolved.decision_reason
+                    : prefix + resolvedLabel;
+                })();
                 return (
                   <div
                     key={p.id}
@@ -159,9 +193,21 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                       <p className="text-sm font-medium">
                         {p.token_amount} credits
                         {p.provider === "payfast" ? (
-                          <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD via PayFast</span>
+                          <span className="text-muted-foreground">
+                            {" "}· ${Number(p.amount_usd).toFixed(2)} USD via PayFast
+                          </span>
+                        ) : isAdmin ? (
+                          <span
+                            className="text-muted-foreground"
+                            data-admin-only="true"
+                            title="Admin-only / internal -- not visible to customers"
+                          >
+                            {" "}· ${Number(p.amount_usd).toFixed(2)} USD via Paystack (legacy/internal)
+                          </span>
                         ) : (
-                          <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD via Paystack</span>
+                          <span className="text-muted-foreground">
+                            {" "}· ${Number(p.amount_usd).toFixed(2)} USD via card checkout
+                          </span>
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -169,15 +215,20 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                         <code
                           className="font-mono text-xs"
                           data-testid={`billing-purchase-ref-${p.id}`}
+                          data-admin-only={isLegacyPaystack && isAdmin ? "true" : undefined}
                           title={
                             p.provider === "payfast"
-                              ? "Payment provider: payfast"
-                              : "Payment provider: paystack"
+                              ? "Payment reference"
+                              : isAdmin
+                              ? "Payment provider: paystack (legacy/internal)"
+                              : "Payment reference"
                           }
                         >
                           {p.provider === "payfast"
                             ? (p.provider_reference ?? p.paystack_reference)
-                            : p.paystack_reference}
+                            : isAdmin
+                            ? p.paystack_reference
+                            : maskPaymentReference(p.paystack_reference)}
                         </code>
                       </p>
                     </div>
@@ -185,13 +236,25 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                       <Badge
                         variant="outline"
                         data-testid={`billing-purchase-provider-${p.id}`}
+                        data-admin-only={isLegacyPaystack && isAdmin ? "true" : undefined}
+                        title={
+                          isLegacyPaystack && isAdmin
+                            ? "Admin-only / internal -- not visible to customers"
+                            : undefined
+                        }
                         className={
                           p.provider === "payfast"
                             ? "border-blue-300 text-blue-700"
-                            : "border-emerald-300 text-emerald-700"
+                            : isAdmin
+                            ? "border-emerald-300 text-emerald-700"
+                            : "border-gray-300 text-gray-700"
                         }
                       >
-                        {p.provider === "payfast" ? "PayFast" : "Paystack"}
+                        {p.provider === "payfast"
+                          ? "PayFast"
+                          : isAdmin
+                          ? "Paystack · legacy/internal"
+                          : "Card"}
                       </Badge>
                       <Badge variant={p.status === "completed" ? "secondary" : "outline"}>
                         {p.status}
@@ -217,11 +280,7 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                           variant="outline"
                           className="text-muted-foreground"
                           data-testid={`refund-resolved-${p.id}`}
-                          title={
-                            resolved?.decision_reason
-                              ? `${resolvedTooltipPrefix}${resolvedLabel} - ${resolved.decision_reason}`
-                              : `${resolvedTooltipPrefix}${resolvedLabel}`
-                          }
+                          title={resolvedTooltip}
                         >
                           {resolvedLabel}
                         </Badge>
