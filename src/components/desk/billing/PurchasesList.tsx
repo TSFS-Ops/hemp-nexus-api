@@ -173,11 +173,16 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                   : isAdmin
                     ? "via Paystack (legacy/internal)"
                     : "via card checkout";
-                const providerReference = isPayfast
+                const rawReference = isPayfast
                   ? (p.provider_reference ?? p.paystack_reference)
-                  : isAdmin
-                    ? p.paystack_reference
-                    : (p.provider_reference ?? p.paystack_reference);
+                  : (p.paystack_reference ?? p.provider_reference ?? "");
+                // Customers never see raw legacy provider references — mask
+                // to last-4. Admins see the full value for reconciliation.
+                const providerReference = isPayfast || isAdmin
+                  ? rawReference
+                  : rawReference
+                    ? `••••${rawReference.slice(-4)}`
+                    : "—";
                 const providerTooltip = isAdmin
                   ? isPayfast
                     ? "Payment provider: payfast"
