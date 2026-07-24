@@ -22,7 +22,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { functions: { invoke: (...a: unknown[]) => invoke(...a) } },
 }));
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ isAdmin: false }),
+  useAuth: () => ({ isAdmin: true }),
 }));
 
 import { PurchasesList } from "@/components/desk/billing/PurchasesList";
