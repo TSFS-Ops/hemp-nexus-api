@@ -91,3 +91,30 @@ The next build workstream after these three PRs are reviewed should be a PayFast
 ## Final status
 
 OPEN_PR_REVIEW_PACK_READY
+
+
+## Addendum - PR 30 additional check investigation (2026-07-23)
+
+This addendum investigates the fifth failing check flagged in the original review pack: "PR26 Pilot Readiness Validation / Source - focused tests - full Vitest - typecheck." No code was changed, nothing was merged, and no new PR was opened to produce this addendum. Only PR 30 was investigated; PR 28 and PR 29 were not touched.
+
+Why this check ran on PR 30 at all: the PR26 Pilot Readiness Validation workflow (.github/workflows/pr26-pilot-readiness-validation.yml) triggers on pull requests to main only when the diff touches specific paths, including the glob "src/tests/funder-workspace-*.test.ts". PR 30 touches src/tests/funder-workspace-batch1-foundation.test.ts and src/tests/funder-workspace-batch6-notifications.test.ts, both of which match that glob. That is exactly why this workflow ran on PR 30 and not on PR 28 or PR 29, neither of which touches any funder-workspace test file.
+
+Exact failing command: within the job's "Full Vitest suite (fail-closed)" step, the command is "bunx vitest run --reporter=verbose 2>&1 | tee validation-artifact/11-full-vitest.txt", run with env VITE_SUPABASE_URL=http://localhost:54321 and VITE_SUPABASE_PUBLISHABLE_KEY=dummy-anon-key-for-vitest (no real Supabase/PostgREST backend is running in this job). This step exited with code 1, which is what fails the check; the subsequent "Typecheck (fail-closed)" step never ran (0s, skipped) because the job stops after the first failing step.
+
+Exact error / summary: the run reports "Test Files 28 failed | 489 passed | 1 skipped (518)", "Tests 67 failed | 7914 passed | 2 skipped (7983)", "Errors 2 errors". A representative example failure is src/tests/basic-memory-schema.test.ts, "table is reachable (PostgREST sees it) but anon select returns no rows", which fails with "Test timed out in 5000ms" - a network timeout against the dummy localhost Supabase URL, not an assertion failure. One of the two unhandled errors is an unrelated mock-export issue: "[vitest] No readRecentPendingAttempts export is defined on the @/components/desk/billing/PaymentReferenceStatus mock."
+
+Whether this is introduced by PR 30: No. The 28 failing test files are: admin-f7-manual-overrides-wiring, audit-ledger-copy-capability-guard, basic-memory-schema, basic-memory-writer, batch-d1-d2-static-guards, batch-m-notifications-prefs, batch-s-support-manual-intervention, cp-fixtures-admin-ui-proof, desk-route-integrity, event-ledger-append-only-convention-guard, funder-workspace-batch2-routes, funder-workspace-batch3-funder-ui, funder-workspace-batch5-workflow, not-002-010-cooldown-and-stale-reminders, not-008-dec-009-unsubscribe-classification, p5-batch3-stage2-isolation, p5-batch3-stage3-isolation, p5-batch3-stage4-isolation, p5-batch3-stage5-isolation, p5-batch3-stage6-isolation, p5-screening-phase-6-memory-audit, payfast-checkout-phase-2c, payfast-itn-phase-2b, payfast-phase-2c-no-regression, phase-1a-support-behavioural, public-api-v1-batch5-counterparty-lookup-summary, public-api-v1-sandprod-batch2-foundation, and registry-search-partial-match.integration (all .test.ts). None of these are the two files PR 30 edited.
+
+Whether it is caused by the two test-file lint changes: No. funder-workspace-batch1-foundation.test.ts and funder-workspace-batch6-notifications.test.ts, the only test files PR 30 touched, do not appear anywhere in the 28-file failure list, and both were already independently confirmed in the original triage to pass 67/67 with eslint exiting 0.
+
+Whether it is caused by the new docs files: No. Markdown files are not executed by Vitest and cannot affect test outcomes; none of the four new doc files are imported or referenced by any test or source file.
+
+Whether it is a pre-existing focused-test/typecheck issue triggered by path filters: Yes. The path filter is why the workflow ran on PR 30 at all, but the failures themselves are pre-existing and environmental. The three payfast-*.test.ts failures in this list are the exact same pre-existing failures already investigated and fixed on PR 29's branch (PR 30 is based on plain main, which does not include PR 29's fix, so they still fail here as expected). The remaining failures are dominated by tests that need a live Supabase/PostgREST backend (for example the 5-second timeout on basic-memory-schema.test.ts against the dummy localhost URL), which this job's "Full Vitest suite" step has never provided. Checking the workflow's own run history confirms this: the two most recent runs of this same workflow before PR 30 (runs #121 and #122, both against the unrelated PR #27 branch claude/funder-workspace-backend-completion) also failed, and PR 30 does not modify the workflow file itself.
+
+Whether a safe minimal fix is available within PR 30's scope: No. Making this job pass would require either standing up a disposable Supabase-compatible backend for the full unscoped Vitest run (a significant CI infrastructure change) or narrowing the "Full Vitest suite" step to a scoped subset of tests (a change to the shared CI workflow file itself, with a blast radius well beyond this PR and outside the low-risk, docs-and-lint-only scope already used for PR 30). Neither is a small or safe change to make inside this PR, so none was applied.
+
+Whether PR 30 should remain blocked until fixed: No. This failure is not evidence of a defect in PR 30's diff. It is the same category of pre-existing, environment-caused CI debt already documented for the repo's other checks (missing live backend / missing secrets), just surfaced by this PR because of the funder-workspace path filter. A reviewer can treat this identically to the other four pre-existing failures already disclosed: safe to review and merge on its technical merits, once a human has read the two mechanical test diffs and four documentation files, without waiting on this check to turn green.
+
+## Addendum final status
+
+PR30_EXTRA_CHECK_PREEXISTING_OR_UNRELATED
