@@ -85,7 +85,13 @@ export const EVIDENCE_RATING_AUDIT_NAMES = [
   "counterparty_rating.methodology_version_changed",
 ] as const;
 
+// See src/lib/evidence-rating.ts for the LEGACY_PROVIDER_KEY_ALIASES rationale.
+// The last four entries are back-compat aliases for historical DB rows only.
 export const EVIDENCE_RATING_NON_LIVE_PROVIDERS = [
+  "company_registry",
+  "identity_document",
+  "sanctions_screening",
+  "pep_screening",
   "cipc",
   "onfido",
   "dow_jones",
