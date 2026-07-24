@@ -141,16 +141,48 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                 const resolved = !hasPending ? resolvedMap.get(p.id) : undefined;
                 const resolvedLabel =
                   resolved?.status === "approved"
-                    ? "Refund approved — provider settlement pending"
+                    ? isAdmin
+                      ? "Refund approved — provider settlement pending"
+                      : "Refund approved"
                     : resolved?.status === "declined"
                       ? "Refund declined"
                       : resolved?.status === "superseded"
                         ? "Refund superseded"
                         : null;
+                // Admin-only tooltip that names the payment-provider mechanic.
+                // Customers see a neutral message — no provider name, no
+                // "settlement" wording.
                 const resolvedTooltipPrefix =
                   resolved?.status === "approved"
-                    ? "Internal approval recorded. Awaiting payment-provider (Paystack) confirmation that funds have been returned. "
+                    ? isAdmin
+                      ? "Internal approval recorded. Awaiting payment-provider confirmation that funds have been returned. "
+                      : "Your refund has been approved. Funds are returned by the original payment method and may take several business days to appear. "
                     : "";
+                const isPayfast = p.provider === "payfast";
+                // Customer view: never render "Paystack" or paystack_reference.
+                // Legacy/internal provider rows are relabelled generically for
+                // customers; admins retain the Paystack label with a
+                // "legacy/internal" annotation.
+                const providerLabel = isPayfast
+                  ? "PayFast"
+                  : isAdmin
+                    ? "Paystack · legacy/internal"
+                    : "Card checkout";
+                const providerViaText = isPayfast
+                  ? "via PayFast"
+                  : isAdmin
+                    ? "via Paystack (legacy/internal)"
+                    : "via card checkout";
+                const providerReference = isPayfast
+                  ? (p.provider_reference ?? p.paystack_reference)
+                  : isAdmin
+                    ? p.paystack_reference
+                    : (p.provider_reference ?? p.paystack_reference);
+                const providerTooltip = isAdmin
+                  ? isPayfast
+                    ? "Payment provider: payfast"
+                    : "Payment provider: paystack (legacy/internal)"
+                  : "Payment reference";
                 return (
                   <div
                     key={p.id}
@@ -160,26 +192,16 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                     <div className="min-w-0">
                       <p className="text-sm font-medium">
                         {p.token_amount} credits
-                        {p.provider === "payfast" ? (
-                          <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD via PayFast</span>
-                        ) : (
-                          <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD via Paystack</span>
-                        )}
+                        <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD {providerViaText}</span>
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(p.created_at).toLocaleString()} · Ref{" "}
+                        {new Date(p.created_at).toLocaleString()} · {isAdmin ? "Ref" : "Payment reference"}{" "}
                         <code
                           className="font-mono text-xs"
                           data-testid={`billing-purchase-ref-${p.id}`}
-                          title={
-                            p.provider === "payfast"
-                              ? "Payment provider: payfast"
-                              : "Payment provider: paystack"
-                          }
+                          title={providerTooltip}
                         >
-                          {p.provider === "payfast"
-                            ? (p.provider_reference ?? p.paystack_reference)
-                            : p.paystack_reference}
+                          {providerReference}
                         </code>
                       </p>
                     </div>
@@ -187,14 +209,18 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                       <Badge
                         variant="outline"
                         data-testid={`billing-purchase-provider-${p.id}`}
+                        data-admin-only={!isPayfast && isAdmin ? "true" : undefined}
                         className={
-                          p.provider === "payfast"
+                          isPayfast
                             ? "border-blue-300 text-blue-700"
-                            : "border-emerald-300 text-emerald-700"
+                            : isAdmin
+                              ? "border-amber-300 text-amber-700"
+                              : "border-slate-300 text-slate-700"
                         }
                       >
-                        {p.provider === "payfast" ? "PayFast" : "Paystack"}
+                        {providerLabel}
                       </Badge>
+
                       <Badge variant={p.status === "completed" ? "secondary" : "outline"}>
                         {p.status}
                       </Badge>
