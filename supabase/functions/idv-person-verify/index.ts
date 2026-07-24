@@ -27,6 +27,14 @@ import { resolveIdvRoute } from "../_shared/idv-route-table.ts";
 import { verifyNowIdv } from "../_shared/verifynow/adapter.ts";
 import { mapInternalStatusToRecordState } from "../_shared/verifynow/record-state-mapping.ts";
 
+// Static, non-sensitive runtime/classifier marker. Persisted on every
+// idv-person-verify row so ops can prove which runtime and classifier
+// wrote a given p5scr_idv_records diagnostic block. Never contains
+// provider values, secrets, or identity data.
+export const CLASSIFIER_VERSION = "verifynow-confirmed-schema-classifier-v1";
+
+
+
 Deno.serve(async (req) => {
     const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "";
     const origin = req.headers.get("origin");
