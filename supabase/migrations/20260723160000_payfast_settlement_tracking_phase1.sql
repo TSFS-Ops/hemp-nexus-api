@@ -313,7 +313,7 @@ BEGIN
           ),
           'open', now(), now()
         )
-    ON CONFLICT (dedup_key) DO UPDATE
+    ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO UPDATE
     SET status = 'open', updated_at = now(), description = EXCLUDED.description;
   END IF;
 
@@ -444,7 +444,7 @@ BEGIN
         FROM public.payment_settlements ps
         WHERE ps.status = 'expected'
           AND ps.expected_settlement_at < now()
-        ON CONFLICT (dedup_key) DO UPDATE
+        ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO UPDATE
           SET status = 'open', updated_at = now()
         RETURNING 1
       )
@@ -465,7 +465,7 @@ BEGIN
           AND tp.status = 'completed'
           AND tp.updated_at < now() - (p_missing_settlement_hours || ' hours')::interval
           AND NOT EXISTS (SELECT 1 FROM public.payment_settlements ps WHERE ps.token_purchase_id = tp.id)
-        ON CONFLICT (dedup_key) DO UPDATE
+        ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO UPDATE
           SET status = 'open', updated_at = now()
         RETURNING 1
       )
