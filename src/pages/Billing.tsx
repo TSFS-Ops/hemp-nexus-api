@@ -583,7 +583,7 @@ function BillingContent() {
                 <p>Credits are usually applied within 30 seconds of payment. If they haven't appeared:</p>
                 <ol className="list-decimal list-inside space-y-1">
                   <li>Refresh this page - your balance updates automatically.</li>
-                  <li>Check your email for a Paystack receipt confirming the payment went through.</li>
+                  <li>Check your email for a receipt from our checkout provider confirming the payment went through.</li>
                   <li>If the receipt shows "successful" but credits aren't here after 5 minutes, email <a href={`mailto:${CHARGING_ENTITY.supportEmail}`} className="text-primary hover:underline">{CHARGING_ENTITY.supportEmail}</a> with your payment reference.</li>
                 </ol>
                 <p className="text-xs mt-2">
@@ -723,7 +723,7 @@ function BillingContent() {
 
         {/* Payment Security Note */}
         <p className="text-center text-xs text-muted-foreground">
-          Payments processed securely by Paystack. All prices shown and charged in USD.
+          Payments processed securely through PayFast. All prices shown and charged in USD.
         </p>
 
         {/* Admin-only Phase 2F PayFast sandbox round-trip button.
