@@ -34,7 +34,7 @@ const ALLOWED_INPUTS = [
 const EXCLUDED_INPUTS = [
   "Stub-only providers and key-presence branches",
   "Demo, sandbox and mock provider results",
-  "CIPC, Onfido, Dow Jones, Refinitiv until they are live integrations",
+  "External company-registry, identity-document and sanctions/PEP providers until they are live integrations",
   "Manually typed claims without supporting evidence",
   "AI-generated statements unless reviewed and approved as a named evidence input",
   "Expired, stale, failed or incomplete checks",

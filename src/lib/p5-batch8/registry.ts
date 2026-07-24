@@ -662,8 +662,8 @@ export const P5_BATCH8_PROVIDER_CATEGORY_DEFINITIONS: Readonly<
   sanctions_pep_adverse_media: {
     code: "sanctions_pep_adverse_media",
     label: "Sanctions / PEP / Adverse Media Screening",
-    preferred_providers: ["Dow Jones", "Refinitiv", "ComplyAdvantage"],
-    fallback: "Dow Jones, Refinitiv or ComplyAdvantage",
+    preferred_providers: ["sanctions/PEP screening provider"],
+    fallback: "an approved sanctions/PEP/adverse-media screening provider",
     required_result_type:
       "screening result, match status, risk band, list/source reference, date/time and decision state",
     live_now: false,
@@ -672,8 +672,8 @@ export const P5_BATCH8_PROVIDER_CATEGORY_DEFINITIONS: Readonly<
   identity_verification: {
     code: "identity_verification",
     label: "Identity Verification / KYC",
-    preferred_providers: ["Smile ID", "Onfido", "Sumsub"],
-    fallback: "Trulioo or manual identity evidence review",
+    preferred_providers: ["identity-document provider"],
+    fallback: "identity-document provider or manual identity evidence review",
     required_result_type:
       "document verification, liveness/selfie result where used, identity match, reference ID and decision state",
     live_now: false,
@@ -683,11 +683,8 @@ export const P5_BATCH8_PROVIDER_CATEGORY_DEFINITIONS: Readonly<
     code: "company_registry_kyb",
     label: "Company Registry / KYB",
     preferred_providers: [
-      "CIPC",
+      "company registry provider",
       "Companies House",
-      "B2BHint",
-      "InfobelPro",
-      "GlobalDatabase",
     ],
     fallback:
       "manual company documents, certificates, director registers and independently sourced registry extracts",
