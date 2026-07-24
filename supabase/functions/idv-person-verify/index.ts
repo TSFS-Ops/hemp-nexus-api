@@ -140,24 +140,28 @@ Deno.serve(async (req) => {
                            p_state: recordState,
                            p_provider_ref: outcome.provider_reference ?? null,
                            p_provider_live_now: false,
-                           p_raw_provider_payload_admin_only: {
-                                     route: routeInput,
-                                     raw_outcome: outcome.raw_outcome,
-                                     error_code: outcome.error_code ?? null,
-                                     workflow_status: workflowStatus,
-                                     record_state: recordState,
-                                     // Batch V instrumentation — values-free structural
-                                     // diagnostics. Admin-only (this column is never
-                                     // returned to end users). Purpose: distinguish
-                                     // auth-rejection vs body-rejection vs unrecognised
-                                     // response-shape without persisting any provider
-                                     // response values.
-                                     diagnostic: {
-                                               raw_http_status: outcome.raw_http_status ?? null,
-                                               response_body_shape: outcome.response_body_shape ?? null,
-                                     },
-                           },
-                   });
+          p_raw_provider_payload_admin_only: {
+                    route: routeInput,
+                    raw_outcome: outcome.raw_outcome ?? null,
+                    error_code: outcome.error_code ?? null,
+                    workflow_status: workflowStatus,
+                    record_state: recordState,
+                    classifier_version: CLASSIFIER_VERSION,
+                    // Batch V instrumentation — values-free structural
+                    // diagnostics. Admin-only (this column is never
+                    // returned to end users). Purpose: distinguish
+                    // auth-rejection vs body-rejection vs unrecognised
+                    // response-shape without persisting any provider
+                    // response values.
+                    diagnostic: {
+                              raw_http_status: outcome.raw_http_status ?? null,
+                              raw_outcome: outcome.raw_outcome ?? null,
+                              error_code: outcome.error_code ?? null,
+                              response_body_shape: outcome.response_body_shape ?? null,
+                              classifier_version: CLASSIFIER_VERSION,
+                    },
+          },
+        });
                    if (rpcErr) {
                            console.error("[idv-person-verify] p5scr_record_idv failed", rpcErr.message);
                            return json({ error: "RECORD_FAILED", detail: rpcErr.message }, 500, req);
