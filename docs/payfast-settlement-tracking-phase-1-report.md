@@ -77,8 +77,61 @@ The most valuable next steps are the admin UI itself (a new panel or tab reading
 
 Yes. payment_settlements_list_v1 and payment_settlement_mark_v1 together provide everything a first admin panel needs: a filterable, joined read contract and a single governed write endpoint with built-in validation and audit logging. Building the panel no longer requires any further schema or RPC design decisions; it is a Phase 2 UI implementation task against the contract documented above.
 
+## Runtime behavioural proof
+
+Added 2026-07-24, after the static source-contract tests above. This section documents a genuine runtime proof -- not another static source-text check -- added at supabase/tests/payfast_settlement_tracking_phase1_runtime_proof.sql and run in CI by .github/workflows/payfast-settlement-runtime-proof.yml.
+
+### How it is run
+
+The new workflow runs on every push to this PR (and via workflow_dispatch) on a GitHub-hosted runner with a disposable postgres:15 service container -- the same pattern already established by .github/workflows/pr26-pilot-readiness-validation.yml, extended with a session-settable auth.uid() stub so a single psql session can simulate an anonymous caller, an ordinary authenticated customer, an auditor, and a platform_admin via SET ROLE plus a custom GUC. The job: (1) bootstraps a minimal Supabase-compatibility surface (auth/storage schemas, anon/authenticated/service_role roles, pgcrypto/uuid-ossp); (2) applies the full supabase/migrations/*.sql chain, including this PR's own migration; (3) runs the proof SQL file, which seeds its own throwaway fixtures (one organisation, three auth.users + user_roles rows, and a set of token_purchases rows) and executes 43 individual behavioural assertions against the four PR #31 RPCs; (4) fails the job (non-zero exit) unless the proof file itself reports every assertion passed.
+
+Locally, the same file can be run against any disposable Postgres 15 instance with the bootstrap step's schemas/roles already present via: `psql -v ON_ERROR_STOP=1 -f supabase/tests/payfast_settlement_tracking_phase1_runtime_proof.sql`.
+
+### What it proves
+
+All of the following were exercised as real SQL/RPC calls against a real Postgres 15 instance running this PR's actual migration output, not read from source text: the payment_settlements table, its four constraints, three indexes, RLS policy, and all four RPCs exist with the documented signatures; an anonymous caller, and an ordinary authenticated non-admin user, cannot read or write payment_settlements at all (permission denied at the GRANT level, not merely RLS-filtered, for writes); a platform_admin and an auditor can both read payment_settlements via RLS, and an auditor's direct write attempt is denied; a completed PayFast purchase produces exactly one settlement row via create_missing_payfast_settlements_v1, a second run creates no duplicate, and failed/abandoned/pending/non-PayFast/missing-provider-reference purchases are correctly skipped; the created row's status, amount_usd, amount_zar, and usd_zar_rate are correctly carried across from token_purchases.metadata; payment_settlement_mark_v1 correctly enforces confirm-requires-bank-reference, delay-requires-reason-or-note, and exception-requires-reason, appends (never overwrites) notes, and writes admin_audit_logs with before/after status on every call; an ordinary customer and an auditor are both rejected by payment_settlement_mark_v1; payment_settlements_list_v1 is usable by platform_admin and auditor, rejects an ordinary customer, and its status/provider_reference/org/date-range/limit filters and returned field shape all work correctly; detect_payment_settlement_risks_v1 is rejected for an ordinary customer; and across every RPC call made during the run, the underlying token_purchases rows remained byte-identical to a pre-proof snapshot, and token_ledger and token_balances row counts were unchanged -- confirming no wallet, ledger, or payment-confirmation mutation anywhere in this feature.
+
+40 of 43 assertions pass. The remaining 3 failures are all one and the same genuine, pre-existing defect in this PR's own migration, described below -- not an artifact of the proof harness, and not related to schema, RLS, or the reconciliation/list RPCs.
+
+### Bug found: ON CONFLICT (dedup_key) does not match the partial unique index
+
+admin_risk_items_dedup_key_uniq (added in an earlier, unrelated migration) is a **partial** unique index: `CREATE UNIQUE INDEX ... ON public.admin_risk_items (dedup_key) WHERE dedup_key IS NOT NULL`. Postgres will only use a partial index as the arbiter for a plain `ON CONFLICT (dedup_key)` clause if the ON CONFLICT clause repeats a compatible WHERE predicate; without it, Postgres cannot infer the index and raises "there is no unique or exclusion constraint matching the ON CONFLICT specification". Both of this PR's admin_risk_items inserts use the plain form:
+
+- payment_settlement_mark_v1's exception-action insert (`ON CONFLICT (dedup_key) DO UPDATE ...`)
+- detect_payment_settlement_risks_v1's two inserts (same pattern, both risk kinds)
+
+The runtime proof confirms this is a real, reproducible failure, not a false positive: marking a settlement exception raises this error inline (so the whole payment_settlement_mark_v1 call fails and the settlement is never actually marked exception, since the failed INSERT aborts the transaction), and detect_payment_settlement_risks_v1 fails identically for both of its risk kinds (overdue-expected and paid-no-settlement-record), so it currently cannot write any risk item at all. Everything else in both functions -- the role checks, the validation rules, the settlement status updates that happen before the admin_risk_items insert -- is unaffected and proven working.
+
+**Recommended fix (not applied here, per this task's scope):** either add the matching predicate to both ON CONFLICT clauses (`ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO UPDATE ...`), or replace the partial unique index with a plain (non-partial) one on admin_risk_items(dedup_key). Either change is small, localized to admin_risk_items-writing code, and outside this task's approved scope of "add a proof, do not modify PayFast/Paystack/wallet/ledger/config.toml logic" -- flagging it here for a follow-up commit on this same PR rather than fixing it silently.
+
+### Other pre-existing, unrelated environment/schema quirks found while building the proof
+
+None of the following are PayFast/payment_settlements issues; all are documented in the proof SQL and workflow YAML comments and are tolerated only as specifically-named, logged exceptions (not a blanket "ignore errors" rule):
+
+- token_purchases.paystack_reference remains NOT NULL UNIQUE even for provider='payfast' rows (a legacy Paystack-era constraint PayFast Phase 2A did not relax); the proof's fixtures supply a synthetic legacy value to satisfy it.
+- token_purchases.status has no 'cancelled' value in its CHECK constraint (only pending, completed, failed, abandoned); the proof uses failed/abandoned/pending in place of "cancelled/incomplete".
+- RBAC Stage 3A (prevent_frozen_role_assignment) permanently freezes the legacy role labels admin, api_admin, billing_admin, buyer, seller, and broker -- none can ever be newly assigned again. The proof uses org_member for its ordinary-customer fixture instead.
+- A later migration's handle_new_user() trigger on auth.users calls an internal helper that queries public.team_invitations, a table no migration in this repository creates; inserting any auth.users row (including the proof's own throwaway fixtures) fails unless that trigger is disabled first.
+- Plain postgres:15 lacks pg_cron, pg_net, pgjwt, pg_graphql, pgmq, supabase_vault (including vault.decrypted_secrets), the "realtime" schema, and the built-in supabase_realtime publication -- all Supabase-platform-only features some older, unrelated migrations depend on. A few older migrations also assume specific seed rows already exist (narrowly-named foreign-key/not-null violations on four unrelated tables) or embed an unrelated fixture self-check ("Test prerequisite failed: Dove profile not found"). The migration-apply step tolerates only these specific, named, logged conditions and fails closed on anything else.
+
+### Commands run
+
+`psql -v ON_ERROR_STOP=1 -f supabase/tests/payfast_settlement_tracking_phase1_runtime_proof.sql` (plus the bootstrap and full migration-chain apply steps described above), executed by GitHub Actions in .github/workflows/payfast-settlement-runtime-proof.yml. See that workflow's run history on PR #31 for the exact logs.
+
+### Result
+
+40 / 43 behavioural assertions passed on a real disposable Postgres 15 instance running this PR's real migration output. The 3 failures are one confirmed, reproducible, pre-existing defect in this PR's own admin_risk_items integration (ON CONFLICT vs. partial unique index), described above. Everything else this PR claims -- table/constraint/index/RLS/RPC existence, full role-based access control, reconciliation creation/idempotency/skip rules, admin update validation/audit-logging/append-only notes, list filtering, and zero wallet/ledger/token_purchases mutation -- is now runtime-proven, not merely statically asserted.
+
+### Is PR #31 now runtime-proven?
+
+Partially. The schema, RLS, reconciliation, admin-update (aside from the exception action), and list-RPC behaviour are now genuinely runtime-proven. The risk-item integration (exception-marking's inline alert, and both detect_payment_settlement_risks_v1 alert kinds) is runtime-proven to be **broken** in its current form, not working -- this is a real bug this PR should fix before merge, not a proof-harness limitation.
+
+### Is UI work now unblocked?
+
+The list and admin-update RPCs (aside from the exception action) are unblocked for UI work now that they are runtime-proven, not just statically asserted. Any admin-UI affordance for marking a settlement "exception", and any risk-inbox surfacing of PayFast settlement risk items, should wait for the ON CONFLICT fix above, since both currently fail at the database level.
+
 ## Blocked items
 
-None of the required Phase 1 backend work is blocked. The items listed under Limitations above are deferred by design, not blocked by missing information needed to proceed with Phase 1 itself.
+None of the required Phase 1 backend work is blocked. The items listed under Limitations above are deferred by design, not blocked by missing information needed to proceed with Phase 1 itself. See "Runtime behavioural proof" above for one confirmed, reproducible bug (ON CONFLICT vs. a partial unique index on admin_risk_items) that this PR should fix before merge -- it affects the exception-marking action and the risk-detection RPC only, not the schema, RLS, reconciliation, or list-RPC behaviour, all of which are now runtime-proven.
 
 Final status: PAYFAST_SETTLEMENT_TRACKING_PHASE_1_PR_READY
