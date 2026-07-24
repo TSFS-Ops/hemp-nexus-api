@@ -33,6 +33,10 @@
 # Supabase-platform gaps (logging each one loudly as a known gap) and
 # hard-fails on any other migration error, so this remains fail-closed for
 # anything that could plausibly be related to PR #31 / payment_settlements.
+# The minimal storage.buckets/storage.objects stub tables are also extended
+# with a few extra nullable columns (file_size_limit, allowed_mime_types,
+# etc.) that some unrelated storage-bucket-seeding migrations insert into,
+# for the same reason.
 #
 # The final gate step in the proof SQL itself raises an exception (non-zero
 # psql exit) if any individual check failed, so a green job status here is a
@@ -123,7 +127,13 @@ jobs:
             id text PRIMARY KEY,
             name text,
             public boolean DEFAULT false,
-            created_at timestamptz DEFAULT now()
+            file_size_limit bigint,
+            allowed_mime_types text[],
+            avif_autodetection boolean DEFAULT false,
+            owner uuid,
+            owner_id text,
+            created_at timestamptz DEFAULT now(),
+            updated_at timestamptz DEFAULT now()
           );
           CREATE TABLE IF NOT EXISTS storage.objects (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -131,7 +141,8 @@ jobs:
             name text,
             owner uuid,
             metadata jsonb DEFAULT '{}'::jsonb,
-            created_at timestamptz DEFAULT now()
+            created_at timestamptz DEFAULT now(),
+            updated_at timestamptz DEFAULT now()
           );
 
           CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
