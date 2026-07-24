@@ -20,6 +20,9 @@ const invoke = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
     supabase: { functions: { invoke: (...a: unknown[]) => invoke(...a) } },
 }));
+vi.mock("@/contexts/AuthContext", () => ({
+    useAuth: () => ({ isAdmin: false }),
+}));
 
 import { PurchasesList } from "@/components/desk/billing/PurchasesList";
 
