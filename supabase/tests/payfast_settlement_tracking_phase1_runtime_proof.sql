@@ -164,10 +164,17 @@ INSERT INTO auth.users (id, email) VALUES
   ('aaaaaaaa-0000-0000-0000-000000000003', 'runtime-proof-customer@example.test')
 ON CONFLICT (id) DO NOTHING;
 
+-- NOTE (schema quirk, unrelated to PR #31): RBAC Stage 3A
+-- (prevent_frozen_role_assignment trigger) permanently freezes the legacy
+-- transaction-side role labels 'buyer'/'seller'/'broker' (plus
+-- 'admin'/'api_admin'/'billing_admin') -- they can never be newly assigned
+-- to user_roles again. 'org_member' is used here instead as the ordinary,
+-- non-admin role for the customer fixture; it is not one of platform_admin
+-- or auditor, which is all this proof requires of it.
 INSERT INTO public.user_roles (user_id, role) VALUES
   ('aaaaaaaa-0000-0000-0000-000000000001', 'platform_admin'),
   ('aaaaaaaa-0000-0000-0000-000000000002', 'auditor'),
-  ('aaaaaaaa-0000-0000-0000-000000000003', 'buyer')
+  ('aaaaaaaa-0000-0000-0000-000000000003', 'org_member')
 ON CONFLICT (user_id, role) DO NOTHING;
 
 CALL pg_temp.act_as(NULL);
