@@ -1,0 +1,252 @@
+# PayFast Settlement Tracking -- Phase 1 -- Runtime Behavioural Proof (PR #31)
+#
+# Runs entirely on a GitHub-hosted runner against a disposable Postgres 15
+# service container. Never connects to the live Lovable Cloud database and
+# never merges the PR. Extends the same disposable-DB pattern already used
+# by .github/workflows/pr26-pilot-readiness-validation.yml -- a minimal
+# Supabase-compatibility bootstrap (auth/storage schemas, anon/authenticated/
+# service_role roles, auth.uid()/jwt()/role() stubs, pgcrypto/uuid-ossp) on
+# top of plain postgres:15. It does NOT install or depend on the Supabase
+# CLI.
+#
+# What this workflow proves when it goes green: see the header comment in
+# supabase/tests/payfast_settlement_tracking_phase1_runtime_proof.sql and
+# docs/payfast-settlement-tracking-phase-1-report.md ("Runtime behavioural
+# proof"). In short: the full migration chain (including PR #31's
+# payment_settlements migration) applies cleanly; the table/constraints/
+# indexes/RLS policy/four RPCs all exist; role-based access control is
+# enforced end to end (anonymous / ordinary customer / auditor /
+# platform_admin); the reconciliation creator, admin-update, list, and
+# risk-detection RPCs all behave as documented; and none of this touches
+# token_purchases (beyond reading it), token_ledger, or wallet balances.
+#
+# What this workflow does NOT prove: live Supabase Auth/Storage/RLS as
+# executed by PostgREST/GoTrue, real PayFast ITN traffic, browser sessions,
+# or production data behaviour.
+#
+# Known, pre-existing, unrelated environment gaps: plain postgres:15 (with
+# no seed/production data) lacks several Supabase-platform-only features
+# that many older, unrelated migrations in this repository depend on --
+# pg_cron scheduling (extension + "cron" schema + cron.job), pg_net,
+# pgjwt, pg_graphql, pgmq, supabase_vault (including vault.decrypted_secrets),
+# the "realtime" schema, and the built-in supabase_realtime publication.
+# A handful of older migrations also assume specific seed/production rows
+# already exist (narrowly-named foreign-key / not-null violations on
+# org_id for four unrelated tables) or embed a self-contained fixture
+# assertion unrelated to payments ("Test prerequisite failed: Dove profile
+# not found"). Each migration file is applied WITHOUT ON_ERROR_STOP,
+# matching psql's default behaviour of continuing past an individual
+# failing statement to the next statement in the same file -- this avoids
+# a single known, unrelated, environment-only statement failure truncating
+# the rest of that migration file, which could otherwise hide real schema
+# this proof depends on. After all migrations are applied, the full
+# combined log is scanned for every "ERROR:" line; any such line is
+# required to match one of the specific, named, known gaps above, or the
+# job fails closed. This keeps the job fail-closed for anything that could
+# plausibly be related to PR #31 / payment_settlements while tolerating
+# only named, pre-existing, environment-only gaps.
+#
+# The final gate step in the proof SQL itself raises an exception (non-zero
+# psql exit) if any individual behavioural check failed, so a green job
+# status here is a genuine pass -- not a "look at the artifact" pass.
+
+name: PayFast Settlement Runtime Proof
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/payfast_settlement_tracking_phase1_runtime_proof.sql"
+      - ".github/workflows/payfast-settlement-runtime-proof.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: payfast-settlement-runtime-proof-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runtime-proof:
+    name: Disposable DB - PayFast settlement tracking runtime proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Prepare artifact dir
+        run: mkdir -p proof-artifact
+
+      - name: Bootstrap Supabase-compatible schemas & roles [fail-closed]
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL' 2>&1 | tee proof-artifact/10-bootstrap.txt
+          -- Deterministic compatibility surface only. Does not prove real
+          -- Supabase Auth/Storage/RLS behaviour -- see workflow header.
+          CREATE SCHEMA IF NOT EXISTS auth;
+          CREATE SCHEMA IF NOT EXISTS storage;
+          CREATE SCHEMA IF NOT EXISTS extensions;
+          CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+          DO $$ BEGIN CREATE ROLE anon NOLOGIN;
+          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE ROLE authenticated NOLOGIN;
+          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE ROLE service_role NOLOGIN BYPASSRLS;
+          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE ROLE authenticator NOINHERIT LOGIN PASSWORD 'postgres';
+          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          GRANT anon, authenticated, service_role TO authenticator;
+
+          CREATE TABLE IF NOT EXISTS auth.users (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            email text,
+            email_confirmed_at timestamptz,
+            raw_user_meta_data jsonb DEFAULT '{}'::jsonb,
+            created_at timestamptz DEFAULT now()
+          );
+          CREATE TABLE IF NOT EXISTS storage.buckets (
+            id text PRIMARY KEY,
+            name text,
+            public boolean DEFAULT false,
+            file_size_limit bigint,
+            allowed_mime_types text[],
+            avif_autodetection boolean DEFAULT false,
+            owner uuid,
+            owner_id text,
+            created_at timestamptz DEFAULT now(),
+            updated_at timestamptz DEFAULT now()
+          );
+          CREATE TABLE IF NOT EXISTS storage.objects (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            bucket_id text REFERENCES storage.buckets(id),
+            name text,
+            owner uuid,
+            metadata jsonb DEFAULT '{}'::jsonb,
+            created_at timestamptz DEFAULT now(),
+            updated_at timestamptz DEFAULT now()
+          );
+
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
+          LANGUAGE sql STABLE AS $fn$ SELECT NULL::uuid $fn$;
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS text
+          LANGUAGE sql STABLE AS $fn$ SELECT NULL::text $fn$;
+          CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb
+          LANGUAGE sql STABLE AS $fn$ SELECT '{}'::jsonb $fn$;
+
+          CREATE OR REPLACE FUNCTION storage.foldername(name text) RETURNS text[]
+          LANGUAGE sql IMMUTABLE AS $fn$
+            SELECT string_to_array(name, '/')
+          $fn$;
+          CREATE OR REPLACE FUNCTION storage.filename(name text) RETURNS text
+          LANGUAGE sql IMMUTABLE AS $fn$
+            SELECT split_part(name, '/', array_length(string_to_array(name,'/'),1))
+          $fn$;
+          CREATE OR REPLACE FUNCTION storage.extension(name text) RETURNS text
+          LANGUAGE sql IMMUTABLE AS $fn$
+            SELECT split_part(name, '.', array_length(string_to_array(name,'.'),1))
+          $fn$;
+          SQL
+
+      - name: Apply full migration chain, including PR #31 [fail-closed]
+        run: |
+          set -e
+          shopt -s nullglob
+          : > proof-artifact/20-migrate.txt
+          for f in supabase/migrations/*.sql; do
+            echo "-- Applying: $f" | tee -a proof-artifact/20-migrate.txt
+            psql -f "$f" >> proof-artifact/20-migrate.txt 2>&1 || true
+          done
+
+          KNOWN_GAP_PATTERNS=(
+            'extension "pg_cron" is not available'
+            'extension "pg_net" is not available'
+            'extension "pgjwt" is not available'
+            'extension "pg_graphql" is not available'
+            'extension "supabase_vault" is not available'
+            'extension "pgmq" is not available'
+            'publication "supabase_realtime" does not exist'
+            'schema "cron" does not exist'
+            'relation "cron.job" does not exist'
+            '_cron_jobs() does not exist'
+            'schema "realtime" does not exist'
+            'relation "vault.decrypted_secrets" does not exist'
+            'Test prerequisite failed'
+            'api_request_logs_org_id_fkey'
+            'org_sso_configs_org_id_fkey'
+            'compliance_cases_org_id_fkey'
+            'null value in column "org_id" of relation "audit_logs"'
+          )
+
+          grep -n 'ERROR:' proof-artifact/20-migrate.txt > /tmp/all_errors.txt || true
+          : > /tmp/unexpected_errors.txt
+          while IFS= read -r line; do
+            known=0
+            for pat in "${KNOWN_GAP_PATTERNS[@]}"; do
+              case "$line" in
+                *"$pat"*) known=1 ;;
+              esac
+              if [ "$known" -eq 1 ]; then break; fi
+            done
+            if [ "$known" -eq 0 ]; then
+              echo "$line" >> /tmp/unexpected_errors.txt
+            fi
+          done < /tmp/all_errors.txt
+
+          if [ -s /tmp/unexpected_errors.txt ]; then
+            echo "UNEXPECTED_MIGRATION_FAILURES:" | tee -a proof-artifact/20-migrate.txt
+            cat /tmp/unexpected_errors.txt | tee -a proof-artifact/20-migrate.txt
+            exit 1
+          fi
+          echo "MIGRATIONS_APPLIED=ok (all ERROR lines matched known, pre-existing, unrelated gaps)" | tee -a proof-artifact/20-migrate.txt
+
+      - name: Run PayFast settlement runtime proof [fail-closed]
+        run: |
+          set -o pipefail
+          psql -v ON_ERROR_STOP=1 \
+            -f supabase/tests/payfast_settlement_tracking_phase1_runtime_proof.sql \
+            2>&1 | tee proof-artifact/30-runtime-proof.txt
+
+      - name: Final gate - fail unless the proof file reported PASSED
+        if: always()
+        run: |
+          if [ -f proof-artifact/30-runtime-proof.txt ] && grep -q "RUNTIME_PROOF_PASSED" proof-artifact/30-runtime-proof.txt; then
+            echo "RESULT: PASS"
+          else
+            echo "RESULT: FAIL"
+            exit 1
+          fi
+
+      - name: Upload runtime proof artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: payfast-settlement-runtime-proof
+          path: proof-artifact/
