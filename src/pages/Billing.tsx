@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Coins, CreditCard, TrendingUp, AlertTriangle, History, 
+import {
+  Coins, CreditCard, TrendingUp, AlertTriangle, History,
   Shield, Building2, FileText, Check, Mail, Info, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
@@ -77,7 +77,6 @@ const CREDIT_PACKAGES = [
     popular: false,
   },
 ];
-
 
 // ==============================================
 // CHARGING ENTITY
@@ -211,7 +210,7 @@ function BillingContent() {
             queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
             invalidateAllCreditBalanceQueries(queryClient);
             publishCrossTab({ kind: "credit-balance" });
-            
+
           } else {
             const paystackStatus = data?.paystackStatus;
             if (data?.verifyInconclusive || paystackStatus === "unknown") {
@@ -274,15 +273,15 @@ function BillingContent() {
     queryFn: async () => {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      
+
       const { data, error } = await supabase
         .from("token_ledger")
         .select("tokens_burned, action_type, created_at")
         .eq("org_id", billingProfile!.org_id)
         .gte("created_at", monthStart.toISOString());
-      
+
       if (error) throw error;
-      
+
       const totalBurned = data?.reduce((sum, e) => sum + Math.max(0, e.tokens_burned || 0), 0) || 0;
       const actionBreakdown: Record<string, number> = {};
       for (const entry of data || []) {
@@ -290,7 +289,7 @@ function BillingContent() {
           actionBreakdown[entry.action_type] = (actionBreakdown[entry.action_type] || 0) + entry.tokens_burned;
         }
       }
-      
+
       return { totalBurned, actionBreakdown, transactionCount: data?.length || 0 };
     },
     enabled: !!session && !!billingProfile?.org_id,
@@ -323,7 +322,7 @@ function BillingContent() {
     if (!billingAvailability.enabled) {
       toast.error(
         billingAvailability.message ||
-          "Credit purchases are temporarily unavailable."
+        "Credit purchases are temporarily unavailable."
       );
       return;
     }
@@ -333,12 +332,12 @@ function BillingContent() {
 
     setIsProcessing(true);
     setSelectedPackage(packageId);
-    
+
     try {
       const data = await apiFetch<any>("token-purchase", {
         method: "POST",
         idempotencyKey: generateIdempotencyKey(`credit_purchase_${packageId}`),
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           packageId,
           callbackUrl: `${window.location.origin}/billing?status=success`,
           cancelUrl: `${window.location.origin}/billing?status=cancelled`,
@@ -463,7 +462,7 @@ function BillingContent() {
                   Minimum required: {minimumRequired.toLocaleString()}
                 </p>
               </div>
-              
+
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Used This Month</p>
                 <p className="text-3xl font-bold">
@@ -473,7 +472,7 @@ function BillingContent() {
                   {usageStats?.transactionCount || 0} transactions
                 </p>
               </div>
-              
+
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Available for Actions</p>
                 <p className="text-3xl font-bold text-primary">
@@ -513,60 +512,60 @@ function BillingContent() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {CREDIT_PACKAGES.map((pkg) => {
               return (
-              <Card 
-                key={pkg.id}
-                className={cn(
-                  "relative transition-all hover:border-primary",
-                  pkg.popular && "border-primary ring-1 ring-primary"
-                )}
-              >
-                {pkg.popular && (
-                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">
-                    Most Popular
-                  </Badge>
-                )}
-                <CardHeader className="pb-2 text-center">
-                  <CardTitle className="text-lg">{pkg.label}</CardTitle>
-                  <CardDescription>{pkg.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold">${pkg.priceUsd.toLocaleString("en-US")}</span>
-                    <span className="text-muted-foreground"> USD</span>
-                  </div>
-                  <div className="space-y-2 text-sm text-muted-foreground mb-6">
-                    <div className="flex items-center justify-center gap-2">
-                      <Coins className="h-4 w-4 text-primary" />
-                      <span>{pkg.credits} {pkg.credits === 1 ? 'credit' : 'credits'}</span>
+                <Card
+                  key={pkg.id}
+                  className={cn(
+                    "relative transition-all hover:border-primary",
+                    pkg.popular && "border-primary ring-1 ring-primary"
+                  )}
+                >
+                  {pkg.popular && (
+                    <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">
+                      Most Popular
+                    </Badge>
+                  )}
+                  <CardHeader className="pb-2 text-center">
+                    <CardTitle className="text-lg">{pkg.label}</CardTitle>
+                    <CardDescription>{pkg.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <div className="mb-4">
+                      <span className="text-4xl font-bold">${pkg.priceUsd.toLocaleString("en-US")}</span>
+                      <span className="text-muted-foreground"> USD</span>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span>${pkg.pricePerCredit} per credit</span>
+                    <div className="space-y-2 text-sm text-muted-foreground mb-6">
+                      <div className="flex items-center justify-center gap-2">
+                        <Coins className="h-4 w-4 text-primary" />
+                        <span>{pkg.credits} {pkg.credits === 1 ? 'credit' : 'credits'}</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span>${pkg.pricePerCredit} per credit</span>
+                      </div>
                     </div>
-                  </div>
-                  <Button
-                    className="w-full"
-                    variant={pkg.popular ? "default" : "outline"}
-                    onClick={() => handlePurchase(pkg.id)}
-                    disabled={isProcessing || !billingAvailability.enabled}
-                    data-testid={`billing-buy-now-${pkg.id}`}
-                  >
-                    {!billingAvailability.enabled ? (
-                      <>Unavailable</>
-                    ) : isProcessing && selectedPackage === pkg.id ? (
-                      <>
-                        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Redirecting to payment…
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Buy Now
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
+                    <Button
+                      className="w-full"
+                      variant={pkg.popular ? "default" : "outline"}
+                      onClick={() => handlePurchase(pkg.id)}
+                      disabled={isProcessing || !billingAvailability.enabled}
+                      data-testid={`billing-buy-now-${pkg.id}`}
+                    >
+                      {!billingAvailability.enabled ? (
+                        <>Unavailable</>
+                      ) : isProcessing && selectedPackage === pkg.id ? (
+                        <>
+                          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                          Redirecting to payment…
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Buy Now
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
@@ -583,7 +582,7 @@ function BillingContent() {
                 <p>Credits are usually applied within 30 seconds of payment. If they haven't appeared:</p>
                 <ol className="list-decimal list-inside space-y-1">
                   <li>Refresh this page - your balance updates automatically.</li>
-                  <li>Check your email for a Paystack receipt confirming the payment went through.</li>
+                  <li>Check your email for a receipt from our checkout provider confirming the payment went through.</li>
                   <li>If the receipt shows "successful" but credits aren't here after 5 minutes, email <a href={`mailto:${CHARGING_ENTITY.supportEmail}`} className="text-primary hover:underline">{CHARGING_ENTITY.supportEmail}</a> with your payment reference.</li>
                 </ol>
                 <p className="text-xs mt-2">
@@ -599,9 +598,6 @@ function BillingContent() {
         {/* DEC-007 - Org-side purchases + refund request affordance */}
         <PurchasesList orgId={billingProfile?.org_id} />
 
-
-
-
         {/* Refund Policy */}
         <Card>
           <CardHeader>
@@ -616,7 +612,6 @@ function BillingContent() {
             <p>• <strong>Trade Request and Signed Deal:</strong> Non-refundable once issued</p>
           </CardContent>
         </Card>
-
 
         {/* Usage Breakdown */}
         {usageStats?.actionBreakdown && Object.keys(usageStats.actionBreakdown).length > 0 && (
@@ -662,8 +657,8 @@ function BillingContent() {
             {recentTransactions?.rows && recentTransactions.rows.length > 0 ? (
               <div className="space-y-2">
                 {recentTransactions.rows.map((tx) => (
-                  <div 
-                    key={tx.id} 
+                  <div
+                    key={tx.id}
                     className="flex items-center justify-between py-2 border-b last:border-0"
                   >
                     <div>
@@ -680,9 +675,9 @@ function BillingContent() {
                         tx.tokens_burned < 0 && "text-green-600",
                         tx.outcome === 'blocked' && "text-destructive"
                       )}>
-                        {tx.outcome === 'blocked' ? 'Blocked' : 
-                         tx.tokens_burned < 0 ? `+${Math.abs(tx.tokens_burned)}` : 
-                         `-${tx.tokens_burned}`}
+                        {tx.outcome === 'blocked' ? 'Blocked' :
+                          tx.tokens_burned < 0 ? `+${Math.abs(tx.tokens_burned)}` :
+                          `-${tx.tokens_burned}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Balance: {tx.remaining_balance?.toLocaleString()}
@@ -723,7 +718,7 @@ function BillingContent() {
 
         {/* Payment Security Note */}
         <p className="text-center text-xs text-muted-foreground">
-          Payments processed securely by Paystack. All prices shown and charged in USD.
+          Payments processed securely through PayFast. All prices shown and charged in USD.
         </p>
 
         {/* Admin-only Phase 2F PayFast sandbox round-trip button.
