@@ -350,7 +350,7 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <FunderPackDownloadButton pack={p} release={release} />
+                        <FunderPackDownloadButton pack={p} release={release} role={v1Role} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -460,12 +460,22 @@ function ConsentTile({
 function FunderPackDownloadButton({
   pack,
   release,
+  role,
 }: {
   pack: PackVersionRow;
   release: DealReleaseRow;
+  role: V1Role | null;
 }) {
   const [busy, setBusy] = useState(false);
   const readiness = packDownloadReadiness(release, pack);
+
+  if (role === "external_adviser") {
+    return (
+      <Button variant="ghost" size="sm" disabled data-testid={`fw-download-disabled-${pack.id}`} title="External advisers have read-only access and cannot download packs." aria-label="Download not available for external advisers">
+      Not available
+      </Button>
+      );
+  }
 
   if (!readiness.ready) {
     return (
@@ -486,12 +496,23 @@ function FunderPackDownloadButton({
     setBusy(true);
     try {
       const res = await requestPackDownload(pack.id);
-      window.open(res.signed_url, "_blank", "noopener,noreferrer");
+      // Trigger via a real anchor click (navigation, not popup) so browsers
+      // do not block it after the async round-trip. window.open() from an
+      // async callback is treated as a programmatic popup and routinely
+      // blocked, which previously surfaced to funders as "download error".
+      const a = document.createElement("a");
+      a.href = res.signed_url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.download = `evidence-pack-v${res.version}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
       toast.success(
-        `Signed link opened. Expires in ${Math.round(res.expires_in_seconds / 60)} min.`,
+        `Download starting. Link expires in ${Math.round(res.expires_in_seconds / 60)} min.`,
       );
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error((e as Error).message || "Download not available");
     } finally {
       setBusy(false);
     }

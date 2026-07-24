@@ -6,15 +6,26 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { encryptSecret } from "../_shared/webhook-crypto.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { isPublicHttpsUrl } from "../_shared/ssrf-guard.ts";
+
+// SSRF-safe URL validator: must parse as URL AND resolve to a public https host.
+// Rejects http://, loopback, RFC1918, link-local, and cloud-metadata targets.
+const safePublicHttpsUrl = z
+  .string()
+  .url("Invalid URL")
+  .refine(isPublicHttpsUrl, {
+    message:
+      "URL must be https:// and target a public host (loopback, private, link-local, and cloud-metadata hosts are not allowed)",
+  });
 
 const webhookCreateSchema = z.object({
-  url: z.string().url("Invalid URL"),
+  url: safePublicHttpsUrl,
   events: z.array(z.string()).min(1, "At least one event is required"),
   secret: z.string().min(16, "Secret must be at least 16 characters").optional(),
 });
 
 const webhookUpdateSchema = z.object({
-  url: z.string().url("Invalid URL").optional(),
+  url: safePublicHttpsUrl.optional(),
   events: z.array(z.string()).min(1, "At least one event is required").optional(),
   status: z.enum(["active", "inactive"]).optional(),
 });

@@ -129,8 +129,22 @@ export const EVIDENCE_RATING_AUDIT_NAMES = [
   "counterparty_rating.methodology_version_changed",
 ] as const;
 
-/** Stub providers cannot support verification_complete (mirrors P010 SSOT). */
+/**
+ * Stub / not-connected provider categories cannot support
+ * `verification_complete` (mirrors P010 SSOT).
+ *
+ * The trailing four entries are LEGACY vendor identifiers kept only for
+ * back-compat with historical DB rows/audit payloads that still carry those
+ * names — see `src/lib/stub-providers.ts` for the same allowlisted rationale.
+ * Do NOT reference these strings from any new code or copy. This constant is
+ * allowlisted in `scripts/check-no-deprecated-compliance-provider-names.mjs`.
+ */
 export const EVIDENCE_RATING_NON_LIVE_PROVIDERS = [
+  "company_registry",
+  "identity_document",
+  "sanctions_screening",
+  "pep_screening",
+  // Back-compat aliases (do not use from new code):
   "cipc",
   "onfido",
   "dow_jones",

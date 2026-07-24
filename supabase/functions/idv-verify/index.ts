@@ -31,10 +31,9 @@ class IdvProviderError extends Error {
  * IDV-001 & IDV-002: Identity/Company Verification
  *
  * Supports multiple providers via admin_settings key "idv_provider":
- *   - "onfido" - Onfido IDV API (requires ONFIDO_API_KEY)
- *   - "cipc"   - South African CIPC company registry (requires CIPC_API_KEY)
  *   - "companies_house" - UK Companies House (requires COMPANIES_HOUSE_API_KEY)
- *   - "stub"   - returns verified for dev/test
+ *   - Individual IDV provider integrations are handled by the dedicated
+ *     `idv-person-verify` function; this function is company-focused.
  *
  * POST: Submit verification request
  * GET:  Check verification status
@@ -47,52 +46,6 @@ interface VerificationResult {
   details: Record<string, unknown>;
 }
 
-// ── Provider: Onfido (stub - ready for real integration) ──
-async function verifyWithOnfido(entityId: string, entityType: string, name: string, docType?: string): Promise<VerificationResult> {
-  const apiKey = Deno.env.get("ONFIDO_API_KEY");
-  if (!apiKey) {
-    throw new ApiException(
-      "CONFIGURATION_ERROR",
-      "Onfido API key not configured. Set ONFIDO_API_KEY secret to enable IDV.",
-      500,
-      { provider: "onfido", setup_required: true }
-    );
-  }
-
-  // TODO: Replace with real Onfido API call
-  // Documentation: https://documentation.onfido.com/
-  // Step 1: POST /applicants → create applicant
-  // Step 2: POST /checks → create check with document + facial_similarity reports
-  // Step 3: GET /checks/{id} → poll for result
-  throw new ApiException(
-    "PROVIDER_NOT_IMPLEMENTED",
-    "Onfido integration requires implementation. API key is configured - add the API call logic.",
-    501,
-    { provider: "onfido", api_key_configured: true }
-  );
-}
-
-// ── Provider: CIPC (South African company registry) ──
-async function verifyWithCIPC(entityId: string, regNumber: string, name: string): Promise<VerificationResult> {
-  const apiKey = Deno.env.get("CIPC_API_KEY");
-  if (!apiKey) {
-    throw new ApiException(
-      "CONFIGURATION_ERROR",
-      "CIPC API key not configured. Set CIPC_API_KEY secret.",
-      500,
-      { provider: "cipc", setup_required: true }
-    );
-  }
-
-  // TODO: Integrate with CIPC e-Services API
-  // https://eservices.cipc.co.za/
-  throw new ApiException(
-    "PROVIDER_NOT_IMPLEMENTED",
-    "CIPC integration requires implementation. API key is configured.",
-    501,
-    { provider: "cipc", api_key_configured: true }
-  );
-}
 
 // ── Provider: Companies House (UK) ──
 async function verifyWithCompaniesHouse(regNumber: string, name: string): Promise<VerificationResult> {
@@ -153,12 +106,12 @@ async function verifyWithCompaniesHouse(regNumber: string, name: string): Promis
 
 // ── Provider allow-list (Batch O Remainder) ──
 // The only providers that may ever be dispatched. Every other string,
-// including the generic dev "stub", "mock", "demo", empty, null, or a
-// typo, is rejected up-front with PROVIDER_MISCONFIGURED. The audited
-// test-mode bypass path above is the ONLY way to complete a
-// verification without a live provider.
-const COMPANY_ALLOWED_PROVIDERS = ["companies_house", "cipc"] as const;
-const INDIVIDUAL_ALLOWED_PROVIDERS = ["onfido"] as const;
+// including generic "stub", "mock", "demo", empty, null, typos, or a
+// deprecated vendor identifier, is rejected up-front with
+// PROVIDER_MISCONFIGURED. The audited test-mode bypass path above is
+// the ONLY way to complete a verification without a live provider.
+const COMPANY_ALLOWED_PROVIDERS = ["companies_house"] as const;
+const INDIVIDUAL_ALLOWED_PROVIDERS: readonly string[] = [];
 
 // NOTE: `verifyWithStub` was deleted in Batch O Remainder. Any code path
 // that previously fell through to a stub verifier now fails closed via
@@ -340,7 +293,7 @@ Deno.serve(async (req: Request) => {
             severity: "high",
             title: "IDV provider misconfigured (unsupported/generic-stub provider blocked)",
             description:
-              "idv-verify was invoked but admin_settings.idv_provider resolved to a value outside the supported allow-list (companies_house, cipc, onfido). The entity was NOT promoted to verified. Configure a real provider before retrying.",
+              "idv-verify was invoked but admin_settings.idv_provider resolved to a value outside the supported allow-list. The entity was NOT promoted to verified. Configure a supported live provider before retrying.",
             metadata: {
               entity_id,
               verification_type: isCompany ? "company" : "individual",
@@ -366,7 +319,7 @@ Deno.serve(async (req: Request) => {
       }
 
 
-      // ── P010: named stub providers (CIPC, Onfido, Dow Jones, Refinitiv) must never run. ──
+      // ── P010: stub / deprecated providers must never run. ──
       // Audit-only event; entity is NOT promoted; no verification result is created.
       if (isStubProvider(resolvedProvider)) {
         await admin.from("audit_logs").insert({
@@ -438,8 +391,6 @@ Deno.serve(async (req: Request) => {
         if (isCompany) {
           if (resolvedProvider === "companies_house") {
             result = await verifyWithCompaniesHouse(entity.registration_number || "", entity.legal_name);
-          } else if (resolvedProvider === "cipc") {
-            result = await verifyWithCIPC(entity_id, entity.registration_number || "", entity.legal_name);
           } else {
             throw new ApiException(
               "PROVIDER_MISCONFIGURED",
@@ -449,16 +400,12 @@ Deno.serve(async (req: Request) => {
             );
           }
         } else {
-          if (resolvedProvider === "onfido") {
-            result = await verifyWithOnfido(entity_id, entity.entity_type, entity.legal_name);
-          } else {
-            throw new ApiException(
-              "PROVIDER_MISCONFIGURED",
-              `Unsupported individual provider dispatch for '${resolvedProvider}'.`,
-              503,
-              { provider: resolvedProvider },
-            );
-          }
+          throw new ApiException(
+            "PROVIDER_MISCONFIGURED",
+            `Unsupported individual provider dispatch for '${resolvedProvider}'.`,
+            503,
+            { provider: resolvedProvider },
+          );
         }
 
       } catch (err) {

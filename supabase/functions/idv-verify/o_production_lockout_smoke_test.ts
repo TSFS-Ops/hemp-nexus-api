@@ -118,12 +118,12 @@ Deno.test("Batch O Remainder — idv-verify declares a strict provider allow-lis
 
   // Explicit constants for company + individual providers.
   assert(
-    /const\s+COMPANY_ALLOWED_PROVIDERS\s*=\s*\[\s*"companies_house"\s*,\s*"cipc"\s*\]\s*as\s+const/.test(src),
-    "COMPANY_ALLOWED_PROVIDERS must be exactly [companies_house, cipc]",
+    /const\s+COMPANY_ALLOWED_PROVIDERS\s*=\s*\[\s*"companies_house"\s*\]\s*as\s+const/.test(src),
+    "COMPANY_ALLOWED_PROVIDERS must be exactly [companies_house]",
   );
   assert(
-    /const\s+INDIVIDUAL_ALLOWED_PROVIDERS\s*=\s*\[\s*"onfido"\s*\]\s*as\s+const/.test(src),
-    "INDIVIDUAL_ALLOWED_PROVIDERS must be exactly [onfido]",
+    /const\s+INDIVIDUAL_ALLOWED_PROVIDERS\s*:\s*readonly\s+string\[\]\s*=\s*\[\s*\]/.test(src),
+    "INDIVIDUAL_ALLOWED_PROVIDERS must be an empty allow-list",
   );
 });
 
@@ -190,7 +190,7 @@ Deno.test("Batch O Remainder — dispatch fails closed for any unknown provider 
   assertEquals(
     throwCount,
     2,
-    "both company and individual dispatch else-branches must throw PROVIDER_MISCONFIGURED",
+    "both company and individual dispatch branches must throw PROVIDER_MISCONFIGURED",
   );
 });
 
@@ -221,7 +221,7 @@ Deno.test("Batch O Remainder — audit_logs write is unconditional; admin_risk_i
 });
 
 
-Deno.test("Batch O — P010 named stub providers (CIPC/Onfido/Dow Jones/Refinitiv) remain blocked with STUB_PROVIDER_NOT_LIVE", async () => {
+Deno.test("Batch O — P010 stub providers (deprecated vendor identifiers) remain blocked with STUB_PROVIDER_NOT_LIVE", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
   assertStringIncludes(src, "isStubProvider(resolvedProvider)");
   assertStringIncludes(src, "STUB_PROVIDER_AUDIT.NOT_LIVE");
@@ -275,7 +275,7 @@ Deno.test("Batch O Remainder — allow-list guard does not attempt any provider 
   const block = src.slice(guardStart, guardEnd);
   assert(!/fetchWithTimeout\(/.test(block), "allow-list guard must not call fetchWithTimeout");
   assert(
-    !/verifyWith(Onfido|CIPC|CompaniesHouse|Stub)\(/.test(block),
+    !/verifyWith(CompaniesHouse|Stub)\(/.test(block),
     "allow-list guard must not call provider helpers",
   );
 });

@@ -1,7 +1,9 @@
 /**
  * Institutional Funder Evidence Workspace — Batch 2
- * Admin: Funder Organisation Detail (read-only in Batch 2).
- * Team management is intentionally out of scope for this batch.
+ * Admin: Funder Organisation Detail.
+ * Team roster is shown read-only here; invitations, role changes and
+ * deactivation continue to route through the existing P-5 Batch 3 admin
+ * console (reused, not duplicated) via the "Manage team" link below.
  */
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -14,7 +16,10 @@ import {
   listAuditEvents,
   listReleasesForOrg,
   listUsageEvents,
+  listFunderUsersForOrg,
+  type FunderUserSummaryRow,
 } from "@/lib/funder-workspace/admin-client";
+import { funderRoleLabel } from "@/lib/funder-workspace/funder-permissions";
 import type {
   AuditEventRow,
   DealReleaseRow,
@@ -28,21 +33,24 @@ export default function FunderWorkspaceOrganisationDetail() {
   const [releases, setReleases] = useState<DealReleaseRow[]>([]);
   const [usage, setUsage] = useState<UsageEventRow[]>([]);
   const [audit, setAudit] = useState<AuditEventRow[]>([]);
+  const [funderUsers, setFunderUsers] = useState<FunderUserSummaryRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [o, rels, u, a] = await Promise.all([
+        const [o, rels, u, a, fu] = await Promise.all([
           getFunderOrganisation(organisationId),
           listReleasesForOrg(organisationId),
           listUsageEvents({ organisationId, limit: 50 }),
           listAuditEvents({ organisationId, limit: 50 }),
+          listFunderUsersForOrg(organisationId),
         ]);
         setOrg(o);
         setReleases(rels);
         setUsage(u);
         setAudit(a);
+        setFunderUsers(fu);
       } catch (e) {
         setError((e as Error).message);
       }
@@ -100,9 +108,9 @@ export default function FunderWorkspaceOrganisationDetail() {
             <CardHeader>
               <CardTitle className="text-base">Funder users</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Funder team self-service management is not available in this batch. Users are managed via the existing P-5 Batch 3 admin console.
-            </CardContent>
+<CardContent className="space-y-2 text-sm">{funderUsers.length === 0 && <p className="text-muted-foreground">No funder users found for this organisation yet.</p>}{funderUsers.map((u) => (
+  <div key={u.id} className="flex items-center justify-between border-b pb-1 text-xs">
+  <span>{u.display_name || u.email} - {funderRoleLabel(u.role)} - {u.status}</span></div>))}<Link to={`/admin/p5-batch3/organisations/${organisationId}`} className="text-sm underline text-primary">Manage team</Link></CardContent>
           </Card>
 
           <Card>

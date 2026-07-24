@@ -3,7 +3,7 @@
  * Static/structural assertions on migration SQL + client code.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const MIG_DIR = join(process.cwd(), "supabase/migrations");
@@ -214,7 +214,7 @@ function walk(dir: string): string[] {
     }
     for (const e of entries) {
       const p = join(cur, e);
-      const st = require("node:fs").statSync(p);
+         const st = statSync(p);
       if (st.isDirectory()) stack.push(p);
       else if (/\.(ts|tsx)$/.test(p)) out.push(p);
     }

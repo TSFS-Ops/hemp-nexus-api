@@ -10,12 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,454 +23,528 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {
-  generateSealedPack,
-  getRelease,
-  linkReleaseToMatch,
-  listAuditEvents,
-  listReleaseConsents,
-  listReleasePackVersions,
-  listUsageEvents,
-  revokeRelease,
+    generateSealedPack,
+    getRelease,
+    linkReleaseToMatch,
+    listAuditEvents,
+    listReleaseConsents,
+    listReleasePackVersions,
+    listUsageEvents,
+    revokeRelease,
 } from "@/lib/funder-workspace/admin-client";
 import type { DealReleaseWithOrg } from "@/lib/funder-workspace/admin-client";
 import type {
-  AuditEventRow,
-  PackVersionRow,
-  ReleaseConsentRow,
-  UsageEventRow,
+    AuditEventRow,
+    PackVersionRow,
+    ReleaseConsentRow,
+    UsageEventRow,
 } from "@/lib/funder-workspace/types";import { CONSENT_STATUS_LABELS } from "@/lib/funder-workspace/consent-labels";
 import {
-  canGenerateSealedPack,
-  effectiveReleaseStatus,
-  packDownloadReadiness,
-  statusBadgeVariant,
-  statusLabel,
+    canGenerateSealedPack,
+    effectiveReleaseStatus,
+    packDownloadReadiness,
+    statusBadgeVariant,
+    statusLabel,
 } from "@/lib/funder-workspace/release-state";
 import {
-  LINKAGE_STATUS_LABEL,
-  linkageStatusBadgeVariant,
-  linkageStatusOf,
-  requiresLegacyLinking,
+    LINKAGE_STATUS_LABEL,
+    linkageStatusBadgeVariant,
+    linkageStatusOf,
+    requiresLegacyLinking,
 } from "@/lib/funder-workspace/linkage-labels";
 import { CanonicalDealSelector } from "./components/CanonicalDealSelector";
 import {
-  AdminDecisionHistoryPanel,
-  AdminRfiPanel,
-  AdminSharedCommentsPanel,
+    AdminDecisionHistoryPanel,
+    AdminRfiPanel,
+    AdminSharedCommentsPanel,
 } from "./components/AdminWorkflowPanels";
 
-
-
 export default function FunderWorkspaceReleaseDetail() {
-  const { releaseId = "" } = useParams();
-  const [release, setRelease] = useState<DealReleaseWithOrg | null>(null);
-  const [consents, setConsents] = useState<ReleaseConsentRow[]>([]);
-  const [packs, setPacks] = useState<PackVersionRow[]>([]);
-  const [usage, setUsage] = useState<UsageEventRow[]>([]);
-  const [audit, setAudit] = useState<AuditEventRow[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [revokeOpen, setRevokeOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [busy, setBusy] = useState(false);
+    const { releaseId = "" } = useParams();
+    const [release, setRelease] = useState<DealReleaseWithOrg | null>(null);
+    const [consents, setConsents] = useState<ReleaseConsentRow[]>([]);
+    const [packs, setPacks] = useState<PackVersionRow[]>([]);
+    const [usage, setUsage] = useState<UsageEventRow[]>([]);
+    const [audit, setAudit] = useState<AuditEventRow[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const [revokeOpen, setRevokeOpen] = useState(false);
+    const [reason, setReason] = useState("");
+    const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
-    try {
-      const [r, c, p, u, a] = await Promise.all([
-        getRelease(releaseId),
-        listReleaseConsents(releaseId),
-        listReleasePackVersions(releaseId),
-        listUsageEvents({ releaseId, limit: 100 }),
-        listAuditEvents({ objectId: releaseId, limit: 100 }),
-      ]);
-      setRelease(r);
-      setConsents(c);
-      setPacks(p);
-      setUsage(u);
-      setAudit(a);
-    } catch (e) {
-      setError((e as Error).message);
-    }
+        try {
+                const [r, c, p, u, a] = await Promise.all([
+                          getRelease(releaseId),
+                          listReleaseConsents(releaseId),
+                          listReleasePackVersions(releaseId),
+                          listUsageEvents({ releaseId, limit: 100 }),
+                          listAuditEvents({ objectId: releaseId, limit: 100 }),
+                        ]);
+                setRelease(r);
+                setConsents(c);
+                setPacks(p);
+                setUsage(u);
+                setAudit(a);
+        } catch (e) {
+                setError((e as Error).message);
+        }
   }, [releaseId]);
 
   useEffect(() => {
-    void refresh();
+        void refresh();
   }, [refresh]);
 
   const handleRevoke = async () => {
-    const trimmed = reason.trim();
-    if (trimmed === "") {
-      toast.error("Revocation reason is required");
-      return;
-    }
-    setBusy(true);
-    try {
-      await revokeRelease({ p_release_id: releaseId, p_reason: trimmed });
-      toast.success("Release revoked");
-      setRevokeOpen(false);
-      setReason("");
-      await refresh();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+        const trimmed = reason.trim();
+        if (trimmed === "") {
+                toast.error("Revocation reason is required");
+                return;
+        }
+        setBusy(true);
+        try {
+                await revokeRelease({ p_release_id: releaseId, p_reason: trimmed });
+                toast.success("Release revoked");
+                setRevokeOpen(false);
+                setReason("");
+                await refresh();
+        } catch (e) {
+                toast.error((e as Error).message);
+        } finally {
+                setBusy(false);
+        }
   };
 
   const [generating, setGenerating] = useState(false);
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [linkMatchId, setLinkMatchId] = useState("");
-  const [linkReason, setLinkReason] = useState("");
-  const [linking, setLinking] = useState(false);
+    const [linkOpen, setLinkOpen] = useState(false);
+    const [linkMatchId, setLinkMatchId] = useState("");
+    const [linkReason, setLinkReason] = useState("");
+    const [linking, setLinking] = useState(false);
 
-  const handleGenerate = async () => {
-    if (!release) return;
-    setGenerating(true);
-    try {
-      const res = await generateSealedPack(releaseId);
-      toast.success(`Sealed pack v${res.version} generated`);
-      await refresh();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setGenerating(false);
-    }
+  // Batch 12 / Phase 2 — audited sealed-pack supersession. When a current
+  // sealed pack already exists, the primary action becomes a supersede
+  // request that requires a written reason (>= 10 characters, mirrors the
+  // server-side p_supersede_reason requirement in fw_admin_seal_pack_v1).
+  const currentPack = packs.find((p) => p.is_current);
+    const [supersedeOpen, setSupersedeOpen] = useState(false);
+    const [supersedeReason, setSupersedeReason] = useState("");
+
+  const handleGenerate = async (supersede: boolean) => {
+        if (!release) return;
+        if (supersede && supersedeReason.trim().length < 10) {
+                toast.error("Supersession reason must be at least 10 characters");
+                return;
+        }
+        setGenerating(true);
+        try {
+const res = await generateSealedPack(releaseId,
+                                                         supersede ? { supersede: true, supersedeReason: supersedeReason.trim() } : undefined,
+                                                     );
+                toast.success(`Sealed pack v${res.version} generated`);
+                setSupersedeOpen(false);
+                setSupersedeReason("");
+                await refresh();
+        } catch (e) {
+                toast.error((e as Error).message);
+        } finally {
+                setGenerating(false);
+        }
   };
 
   const handleLink = async () => {
-    if (!linkMatchId || !linkReason.trim()) {
-      toast.error("Select a canonical deal and provide a reason");
-      return;
-    }
-    setLinking(true);
-    try {
-      await linkReleaseToMatch({ p_release_id: releaseId, p_match_id: linkMatchId, p_reason: linkReason.trim() });
-      toast.success("Release linked to canonical deal");
-      setLinkOpen(false);
-      setLinkMatchId("");
-      setLinkReason("");
-      await refresh();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setLinking(false);
-    }
+        if (!linkMatchId || !linkReason.trim()) {
+                toast.error("Select a canonical deal and provide a reason");
+                return;
+        }
+        setLinking(true);
+        try {
+                await linkReleaseToMatch({ p_release_id: releaseId, p_match_id: linkMatchId, p_reason: linkReason.trim() });
+                toast.success("Release linked to canonical deal");
+                setLinkOpen(false);
+                setLinkMatchId("");
+                setLinkReason("");
+                await refresh();
+        } catch (e) {
+                toast.error((e as Error).message);
+        } finally {
+                setLinking(false);
+        }
   };
 
-
   return (
-    <div className="p-6 space-y-4" data-testid="fw-admin-release-detail">
-      <BackButton fallback="/admin/funder-workspace/releases" label="Releases" />
-
-      {error && <Card><CardContent className="pt-6 text-sm text-destructive">Failed to load: {error}</CardContent></Card>}
-
-      {release && (
-        <>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold">Release {release.deal_reference}</h1>
-              <p className="text-sm text-muted-foreground">
-                {release.funder_organisation?.name ?? "—"} · Pack v{release.evidence_pack_version ?? "—"}
-              </p>
-            </div>
-            <div className="space-x-2">
-              {(() => {
-                const eff = effectiveReleaseStatus(release);
-                const linkage = linkageStatusOf(release);
-                return (
+        <div className="p-6 space-y-4" data-testid="fw-admin-release-detail">
+              <BackButton fallback="/admin/funder-workspace/releases" label="Releases" />
+        
+          {error && <Card><CardContent className="pt-6 text-sm text-destructive">Failed to load: {error}</CardContent></Card>}
+        
+          {release && (
                   <>
-                    <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
-                    <Badge variant={linkageStatusBadgeVariant(linkage)} data-testid="fw-admin-release-linkage">
-                      {LINKAGE_STATUS_LABEL[linkage]}
-                    </Badge>
+                            <div className="flex items-start justify-between">
+                                        <div>
+                                                      <h1 className="text-2xl font-semibold">Release {release.deal_reference}</h1>
+                                                      <p className="text-sm text-muted-foreground">
+                                                        {release.funder_organisation?.name ?? "—"} · Pack v{release.evidence_pack_version ?? "—"}
+                                                      </p>
+                                        </div>
+                                        <div className="space-x-2">
+                                          {(() => {
+                                    const eff = effectiveReleaseStatus(release);
+                                    const linkage = linkageStatusOf(release);
+                                    return (
+                                                        <>
+                                                                            <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                                                                            <Badge variant={linkageStatusBadgeVariant(linkage)} data-testid="fw-admin-release-linkage">
+                                                                              {LINKAGE_STATUS_LABEL[linkage]}
+                                                                            </Badge>
+                                                        </>
+                                                      );
+                  })()}
+                                          {requiresLegacyLinking(linkageStatusOf(release)) && (
+                                    <Button variant="outline" onClick={() => setLinkOpen(true)} data-testid="fw-admin-link-canonical">
+                                                      Link canonical deal
+                                    </Button>
+                                                      )}
+                                                      <Button
+                                                                        variant="destructive"
+                                                                        disabled={release.release_status === "revoked"}
+                                                                        onClick={() => setRevokeOpen(true)}
+                                                                        data-testid="fw-release-revoke"
+                                                                      >
+                                                                      Revoke
+                                                      </Button>
+                                        </div>
+                            </div>
+                  
+                    {requiresLegacyLinking(linkageStatusOf(release)) && (
+                                <Alert variant="destructive" data-testid="fw-admin-linkage-warning">
+                                              <AlertTriangle className="h-4 w-4" />
+                                              <AlertTitle>Canonical deal not linked</AlertTitle>
+                                              <AlertDescription>
+                                                              This release does not have a canonical deal linked. Pack generation is blocked until a canonical
+                                                              deal is linked, so no misleading evidence pack is sealed. Use "Link canonical deal" above to link
+                                                              this release to a real deal on the platform.
+                                              </AlertDescription>
+                                </Alert>
+                            )}
+                  
+                    {release.admin_override_reason && (
+                                <Alert variant="destructive">
+                                              <AlertTriangle className="h-4 w-4" />
+                                              <AlertTitle>Admin override in effect</AlertTitle>
+                                              <AlertDescription>{release.admin_override_reason}</AlertDescription>
+                                </Alert>
+                            )}
+                  
+                            <Card>
+                                        <CardHeader><CardTitle className="text-base">Release details</CardTitle></CardHeader>
+                                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                                      <div><span className="text-muted-foreground">Deal:</span> <span className="font-mono">{release.deal_reference}</span></div>
+                                                      <div><span className="text-muted-foreground">Funder:</span> {release.funder_organisation?.name ?? "—"}</div>
+                                                      <div><span className="text-muted-foreground">Pack ID:</span> <span className="font-mono text-xs">{release.evidence_pack_id ?? "—"}</span></div>
+                                                      <div><span className="text-muted-foreground">Pack version:</span> {release.evidence_pack_version ?? "—"}</div>
+                                                      <div><span className="text-muted-foreground">Released at:</span> {release.released_at ? new Date(release.released_at).toLocaleString() : "—"}</div>
+                                                      <div><span className="text-muted-foreground">Expires at:</span> {release.expires_at ? new Date(release.expires_at).toLocaleString() : "—"}</div>
+                                          {release.revoked_at && (
+                                    <>
+                                                      <div><span className="text-muted-foreground">Revoked at:</span> {new Date(release.revoked_at).toLocaleString()}</div>
+                                                      <div className="md:col-span-2"><span className="text-muted-foreground">Revocation reason:</span> {release.revocation_reason}</div>
+                                    </>
+                                  )}
+                                                      <div className="md:col-span-2"><span className="text-muted-foreground">Release reason:</span> {release.release_reason ?? "—"}</div>
+                                        </CardContent>
+                            </Card>
+                  
+                            <Card>
+                                        <CardHeader><CardTitle className="text-base">Permissions</CardTitle></CardHeader>
+                                        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                                                      <Perm label="Evidence summary" v={release.can_view_evidence_summary} />
+                                                      <Perm label="Evidence room" v={release.can_view_evidence_room} />
+                                                      <Perm label="Compiled pack download" v={release.can_download_compiled_pack} />
+                                                      <Perm label="Raw documents (view)" v={release.can_view_raw_documents} elevated />
+                                                      <Perm label="Raw documents (download)" v={release.can_download_raw_documents} elevated />
+                                                      <Perm label="Unmasked sensitive details" v={release.can_view_unmasked_sensitive_details} elevated />
+                                        </CardContent>
+                            </Card>
+                  
+                            <Card>
+                                        <CardHeader><CardTitle className="text-base">Consent</CardTitle></CardHeader>
+                                        <CardContent>
+                                                      <Table>
+                                                                      <TableHeader>
+                                                                                        <TableRow>
+                                                                                                            <TableHead>Party</TableHead>
+                                                                                                            <TableHead>Status</TableHead>
+                                                                                                            <TableHead>Captured at</TableHead>
+                                                                                                            <TableHead>Source</TableHead>
+                                                                                                            <TableHead>Override reason</TableHead>
+                                                                                          </TableRow>
+                                                                      </TableHeader>
+                                                                      <TableBody>
+                                                                        {consents.map((c) => (
+                                        <TableRow key={c.id}>
+                                                              <TableCell className="capitalize">{c.party_type}</TableCell>
+                                                              <TableCell><Badge variant={c.status === "granted" ? "default" : c.status === "overridden" ? "destructive" : "secondary"}>{CONSENT_STATUS_LABELS[c.status] ?? c.status}</Badge></TableCell>
+                                                              <TableCell className="text-xs">{c.captured_at ? new Date(c.captured_at).toLocaleString() : "—"}</TableCell>
+                                                              <TableCell className="text-xs">{c.source ?? "—"}</TableCell>
+                                                              <TableCell className="text-xs">{c.override_reason ?? "—"}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                                                      </TableBody>
+                                                      </Table>
+                                        </CardContent>
+                            </Card>
+                  
+                    {(() => {
+                                const baseGate = canGenerateSealedPack(release);
+                                const linkage = linkageStatusOf(release);
+                                const linkageBlocks = requiresLegacyLinking(linkage);
+                                const gate = linkageBlocks
+                                                ? { ok: false as const, reason: "Pack generation is blocked: this release has no canonical deal linked. Link a canonical deal first to avoid sealing a misleading pack." }
+                                                : baseGate;
+                                return (
+                                                <Card>
+                                                                <CardHeader className="flex-row items-center justify-between">
+                                                                                  <div>
+                                                                                                      <CardTitle className="text-base">Pack versions</CardTitle>
+                                                                                    {!gate.ok && (
+                                                                        <p className="text-xs text-muted-foreground mt-1" data-testid="fw-admin-generate-blocked-reason">
+                                                                          {gate.reason}
+                                                                        </p>
+                                                                                                      )}
+                                                                                    </div>
+                                                                                  <Button
+                                                                                                        size="sm"
+                                                                                                        onClick={() => (currentPack ? setSupersedeOpen(true) : handleGenerate(false))}
+                                                                                                        disabled={generating || !gate.ok}
+                                                                                                        title={gate.reason}
+                                                                                                        data-testid="fw-admin-generate-pack"
+                                                                                                      >
+                                                                                    {generating
+                                                                                                            ? "Generating…"
+                                                                                                            : currentPack
+                                                                                                              ? `Generate Version ${currentPack.version + 1} (supersede)`
+                                                                                                              : "Generate sealed pack"}
+                                                                                    </Button>
+                                                                </CardHeader>
+                                                
+                                                                <CardContent>
+                                                                  {packs.length === 0 ? (
+                                                                      <p className="text-sm text-muted-foreground">No sealed pack versions yet. Click <span className="font-medium">Generate sealed pack</span> to produce one.</p>
+                                                                    ) : (
+                                                                      <Table>
+                                                                                            <TableHeader>
+                                                                                                                    <TableRow>
+                                                                                                                                              <TableHead>Version</TableHead>
+                                                                                                                                              <TableHead>Status</TableHead>
+                                                                                                                                              <TableHead>State</TableHead>
+                                                                                                                                              <TableHead>Generated</TableHead>
+                                                                                                                                              <TableHead>Sealed</TableHead>
+                                                                                                                                              <TableHead>SHA-256</TableHead>
+                                                                                                                                              <TableHead>Funder can download</TableHead>
+                                                                                                                      </TableRow>
+                                                                                              </TableHeader>
+                                                                                            <TableBody>
+                                                                                              {packs.map((p) => {
+                                                                                                  const readiness = packDownloadReadiness(release, p);
+                                                                                                  return (
+                                                                                                                                <TableRow key={p.id}>
+                                                                                                                                                              <TableCell>v{p.version}</TableCell>
+                                                                                                                                                              <TableCell><Badge>{p.status}</Badge></TableCell>
+                                                                                                                                                              <TableCell>
+                                                                                                                                                                {p.is_current ? (
+                                                                                                                                                                    <Badge data-testid={`fw-admin-pack-current-${p.id}`}>Current</Badge>
+                                                                                                                                                                  ) : p.superseded_at ? (
+                                                                                                                                                                    <Badge
+                                                                                                                                                                                                          variant="secondary"
+                                                                                                                                                                                                          data-testid={`fw-admin-pack-superseded-${p.id}`}
+                                                                                                                                                                                                          title={`Superseded ${new Date(p.superseded_at).toLocaleString()}${p.supersession_reason ? ` — ${p.supersession_reason}` : ""}`}
+                                                                                                                                                                                                        >
+                                                                                                                                                                                                        Superseded
+                                                                                                                                                                      </Badge>
+                                                                                                                                                                  ) : (
+                                                                                                                                                                    <span className="text-xs text-muted-foreground">—</span>
+                                                                                                                                                                                              )}
+                                                                                                                                                                </TableCell>
+                                                                                                                                                              <TableCell className="text-xs">{p.generated_at ? new Date(p.generated_at).toLocaleString() : "—"}</TableCell>
+                                                                                                                                                              <TableCell className="text-xs">{p.sealed_at ? new Date(p.sealed_at).toLocaleString() : "—"}</TableCell>
+                                                                                                                                                              <TableCell className="font-mono text-xs">{p.file_sha256 ? p.file_sha256.slice(0, 12) + "…" : "—"}</TableCell>
+                                                                                                                                                              <TableCell>
+                                                                                                                                                                                              <Badge
+                                                                                                                                                                                                                                  variant={readiness.ready ? "default" : "secondary"}
+                                                                                                                                                                                                                                  title={readiness.reason}
+                                                                                                                                                                                                                                  data-testid={`fw-admin-pack-funder-ready-${p.id}`}
+                                                                                                                                                                                                                                >
+                                                                                                                                                                                                                                {readiness.ready ? "Yes" : "No"}
+                                                                                                                                                                                                                              </Badge>
+                                                                                                                                                                </TableCell>
+                                                                                                                                  </TableRow>
+                                                                                                                              );
+                                                                        })}
+                                                                                              </TableBody>
+                                                                      </Table>
+                                                                                  )}
+                                                                  {packs.some((p) => p.superseded_at) && (
+                                                                      <div className="mt-3 space-y-1" data-testid="fw-admin-supersession-history">
+                                                                                            <p className="text-xs font-medium text-muted-foreground">Supersession history</p>
+                                                                        {packs
+                                                                                                  .filter((p) => p.superseded_at)
+                                                                                                  .map((p) => (
+                                                                                                                              <p key={p.id} className="text-xs text-muted-foreground">
+                                                                                                                                                          v{p.version} superseded {new Date(p.superseded_at as string).toLocaleString()}
+                                                                                                                                {p.supersession_reason ? ` — ${p.supersession_reason}` : ""}
+                                                                                                                                </p>
+                                                                                                                            ))}
+                                                                      </div>
+                                                                                  )}
+                                                                </CardContent>
+                                                </Card>
+                                              );
+                  })()}
+                  
+                            <AdminRfiPanel releaseId={releaseId} />
+                            <AdminSharedCommentsPanel releaseId={releaseId} />
+                            <AdminDecisionHistoryPanel releaseId={releaseId} />
+                  
+                            <Card>
+                                        <CardHeader><CardTitle className="text-base">Usage events</CardTitle></CardHeader>
+                                        <CardContent>
+                                                      <Table>
+                                                                      <TableHeader>
+                                                                                        <TableRow>
+                                                                                                            <TableHead>When</TableHead>
+                                                                                                            <TableHead>Event</TableHead>
+                                                                                          </TableRow>
+                                                                      </TableHeader>
+                                                                      <TableBody>
+                                                                        {usage.map((e) => (
+                                        <TableRow key={e.id}>
+                                                              <TableCell className="text-xs">{new Date(e.occurred_at).toLocaleString()}</TableCell>
+                                                              <TableCell className="font-mono text-xs">{e.event_type}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                                                      </TableBody>
+                                                      </Table>
+                                        </CardContent>
+                            </Card>
+                  
+                            <Card>
+                                        <CardHeader><CardTitle className="text-base">Audit events</CardTitle></CardHeader>
+                                        <CardContent>
+                                                      <Table>
+                                                                      <TableHeader>
+                                                                                        <TableRow>
+                                                                                                            <TableHead>When</TableHead>
+                                                                                                            <TableHead>Action</TableHead>
+                                                                                                            <TableHead>Reason</TableHead>
+                                                                                          </TableRow>
+                                                                      </TableHeader>
+                                                                      <TableBody>
+                                                                        {audit.map((a) => (
+                                        <TableRow key={a.id}>
+                                                              <TableCell className="text-xs">{new Date(a.created_at).toLocaleString()}</TableCell>
+                                                              <TableCell className="font-mono text-xs">{a.action}</TableCell>
+                                                              <TableCell className="text-xs">{a.reason_code ?? "—"}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                                                      </TableBody>
+                                                      </Table>
+                                        </CardContent>
+                            </Card>
                   </>
-                );
-              })()}
-              {requiresLegacyLinking(linkageStatusOf(release)) && (
-                <Button variant="outline" onClick={() => setLinkOpen(true)} data-testid="fw-admin-link-canonical">
-                  Link canonical deal
-                </Button>
-              )}
-              <Button
-                variant="destructive"
-                disabled={release.release_status === "revoked"}
-                onClick={() => setRevokeOpen(true)}
-                data-testid="fw-release-revoke"
-              >
-                Revoke
-              </Button>
-            </div>
-          </div>
-
-          {requiresLegacyLinking(linkageStatusOf(release)) && (
-            <Alert variant="destructive" data-testid="fw-admin-linkage-warning">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Canonical deal not linked</AlertTitle>
-              <AlertDescription>
-                This release does not have a canonical deal linked. Pack generation is blocked until a canonical
-                deal is linked, so no misleading evidence pack is sealed. Use "Link canonical deal" above to link
-                this release to a real deal on the platform.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {release.admin_override_reason && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Admin override in effect</AlertTitle>
-              <AlertDescription>{release.admin_override_reason}</AlertDescription>
-            </Alert>
-          )}
-
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">Release details</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div><span className="text-muted-foreground">Deal:</span> <span className="font-mono">{release.deal_reference}</span></div>
-              <div><span className="text-muted-foreground">Funder:</span> {release.funder_organisation?.name ?? "—"}</div>
-              <div><span className="text-muted-foreground">Pack ID:</span> <span className="font-mono text-xs">{release.evidence_pack_id ?? "—"}</span></div>
-              <div><span className="text-muted-foreground">Pack version:</span> {release.evidence_pack_version ?? "—"}</div>
-              <div><span className="text-muted-foreground">Released at:</span> {release.released_at ? new Date(release.released_at).toLocaleString() : "—"}</div>
-              <div><span className="text-muted-foreground">Expires at:</span> {release.expires_at ? new Date(release.expires_at).toLocaleString() : "—"}</div>
-              {release.revoked_at && (
-                <>
-                  <div><span className="text-muted-foreground">Revoked at:</span> {new Date(release.revoked_at).toLocaleString()}</div>
-                  <div className="md:col-span-2"><span className="text-muted-foreground">Revocation reason:</span> {release.revocation_reason}</div>
-                </>
-              )}
-              <div className="md:col-span-2"><span className="text-muted-foreground">Release reason:</span> {release.release_reason ?? "—"}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">Permissions</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-              <Perm label="Evidence summary" v={release.can_view_evidence_summary} />
-              <Perm label="Evidence room" v={release.can_view_evidence_room} />
-              <Perm label="Compiled pack download" v={release.can_download_compiled_pack} />
-              <Perm label="Raw documents (view)" v={release.can_view_raw_documents} elevated />
-              <Perm label="Raw documents (download)" v={release.can_download_raw_documents} elevated />
-              <Perm label="Unmasked sensitive details" v={release.can_view_unmasked_sensitive_details} elevated />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">Consent</CardTitle></CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Party</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Captured at</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Override reason</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {consents.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="capitalize">{c.party_type}</TableCell>
-                      <TableCell><Badge variant={c.status === "granted" ? "default" : c.status === "overridden" ? "destructive" : "secondary"}>{CONSENT_STATUS_LABELS[c.status] ?? c.status}</Badge></TableCell>
-                      <TableCell className="text-xs">{c.captured_at ? new Date(c.captured_at).toLocaleString() : "—"}</TableCell>
-                      <TableCell className="text-xs">{c.source ?? "—"}</TableCell>
-                      <TableCell className="text-xs">{c.override_reason ?? "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {(() => {
-            const baseGate = canGenerateSealedPack(release);
-            const linkage = linkageStatusOf(release);
-            const linkageBlocks = requiresLegacyLinking(linkage);
-            const gate = linkageBlocks
-              ? { ok: false as const, reason: "Pack generation is blocked: this release has no canonical deal linked. Link a canonical deal first to avoid sealing a misleading pack." }
-              : baseGate;
-            return (
-              <Card>
-                <CardHeader className="flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">Pack versions</CardTitle>
-                    {!gate.ok && (
-                      <p className="text-xs text-muted-foreground mt-1" data-testid="fw-admin-generate-blocked-reason">
-                        {gate.reason}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleGenerate}
-                    disabled={generating || !gate.ok}
-                    title={gate.reason}
-                    data-testid="fw-admin-generate-pack"
-                  >
-                    {generating ? "Generating…" : "Generate sealed pack"}
-                  </Button>
-                </CardHeader>
-
-                <CardContent>
-                  {packs.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No sealed pack versions yet. Click <span className="font-medium">Generate sealed pack</span> to produce one.</p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Version</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Generated</TableHead>
-                          <TableHead>Sealed</TableHead>
-                          <TableHead>SHA-256</TableHead>
-                          <TableHead>Funder can download</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {packs.map((p) => {
-                          const readiness = packDownloadReadiness(release, p);
-                          return (
-                            <TableRow key={p.id}>
-                              <TableCell>v{p.version}</TableCell>
-                              <TableCell><Badge>{p.status}</Badge></TableCell>
-                              <TableCell className="text-xs">{p.generated_at ? new Date(p.generated_at).toLocaleString() : "—"}</TableCell>
-                              <TableCell className="text-xs">{p.sealed_at ? new Date(p.sealed_at).toLocaleString() : "—"}</TableCell>
-                              <TableCell className="font-mono text-xs">{p.file_sha256 ? p.file_sha256.slice(0, 12) + "…" : "—"}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={readiness.ready ? "default" : "secondary"}
-                                  title={readiness.reason}
-                                  data-testid={`fw-admin-pack-funder-ready-${p.id}`}
-                                >
-                                  {readiness.ready ? "Yes" : "No"}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })()}
-
-          <AdminRfiPanel releaseId={releaseId} />
-          <AdminSharedCommentsPanel releaseId={releaseId} />
-          <AdminDecisionHistoryPanel releaseId={releaseId} />
-
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">Usage events</CardTitle></CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>When</TableHead>
-                    <TableHead>Event</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {usage.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="text-xs">{new Date(e.occurred_at).toLocaleString()}</TableCell>
-                      <TableCell className="font-mono text-xs">{e.event_type}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">Audit events</CardTitle></CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>When</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Reason</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {audit.map((a) => (
-                    <TableRow key={a.id}>
-                      <TableCell className="text-xs">{new Date(a.created_at).toLocaleString()}</TableCell>
-                      <TableCell className="font-mono text-xs">{a.action}</TableCell>
-                      <TableCell className="text-xs">{a.reason_code ?? "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </>
-      )}
-
-      <Dialog open={revokeOpen} onOpenChange={setRevokeOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Revoke deal release</DialogTitle></DialogHeader>
-          <div className="space-y-2">
-            <p className="text-sm">
-              This immediately terminates the funder's access to this release. A written reason is required.
-            </p>
-            <Label htmlFor="fw-revoke-reason">Revocation reason (required)</Label>
-            <Textarea id="fw-revoke-reason" value={reason} onChange={(e) => setReason(e.target.value)} required maxLength={1000} />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-            <Button variant="destructive" onClick={handleRevoke} disabled={busy || reason.trim() === ""} data-testid="fw-release-revoke-confirm">
-              Revoke release
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Link canonical deal to release</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm">
-              Search the platform for the real deal this release corresponds to. Only a validated selection can be
-              linked — free-text references are not accepted. This action is audited.
-            </p>
-            <CanonicalDealSelector
-              value={linkMatchId}
-              onChange={(mid) => setLinkMatchId(mid)}
-              testIdPrefix="fw-link-selector"
-            />
-            <Label htmlFor="fw-link-reason">Linkage reason (required)</Label>
-            <Textarea
-              id="fw-link-reason"
-              value={linkReason}
-              onChange={(e) => setLinkReason(e.target.value)}
-              maxLength={1000}
-              data-testid="fw-link-reason"
-            />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-            <Button
-              onClick={handleLink}
-              disabled={linking || !linkMatchId || linkReason.trim() === ""}
-              data-testid="fw-link-confirm"
-            >
-              Link deal
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+                )}
+        
+              <Dialog open={revokeOpen} onOpenChange={setRevokeOpen}>
+                      <DialogContent>
+                                <DialogHeader><DialogTitle>Revoke deal release</DialogTitle></DialogHeader>
+                                <div className="space-y-2">
+                                            <p className="text-sm">
+                                                          This immediately terminates the funder's access to this release. A written reason is required.
+                                            </p>
+                                            <Label htmlFor="fw-revoke-reason">Revocation reason (required)</Label>
+                                            <Textarea id="fw-revoke-reason" value={reason} onChange={(e) => setReason(e.target.value)} required maxLength={1000} />
+                                </div>
+                                <DialogFooter>
+                                            <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                                            <Button variant="destructive" onClick={handleRevoke} disabled={busy || reason.trim() === ""} data-testid="fw-release-revoke-confirm">
+                                                          Revoke release
+                                            </Button>
+                                </DialogFooter>
+                      </DialogContent>
+              </Dialog>
+        
+              <Dialog open={supersedeOpen} onOpenChange={setSupersedeOpen}>
+                      <DialogContent>
+                                <DialogHeader><DialogTitle>Generate a new sealed pack version</DialogTitle></DialogHeader>
+                                <div className="space-y-2">
+                                            <p className="text-sm">
+                                                          This will supersede the current sealed pack{currentPack ? ` (v${currentPack.version})` : ""}. The
+                                                          prior version is retained unchanged and stays visible in the supersession history below. A written
+                                                          reason of at least 10 characters is required.
+                                            </p>
+                                            <Label htmlFor="fw-supersede-reason">Supersession reason (required)</Label>
+                                            <Textarea
+                                                            id="fw-supersede-reason"
+                                                            value={supersedeReason}
+                                                            onChange={(e) => setSupersedeReason(e.target.value)}
+                                                            maxLength={1000}
+                                                            data-testid="fw-admin-supersede-reason"
+                                                          />
+                                </div>
+                                <DialogFooter>
+                                            <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                                            <Button
+                                                            onClick={() => handleGenerate(true)}
+                                                            disabled={generating || supersedeReason.trim().length < 10}
+                                                            data-testid="fw-admin-supersede-confirm"
+                                                          >
+                                              {generating ? "Generating…" : "Generate new version"}
+                                            </Button>
+                                </DialogFooter>
+                      </DialogContent>
+              </Dialog>
+        
+              <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+                      <DialogContent>
+                                <DialogHeader><DialogTitle>Link canonical deal to release</DialogTitle></DialogHeader>
+                                <div className="space-y-3">
+                                            <p className="text-sm">
+                                                          Search the platform for the real deal this release corresponds to. Only a validated selection can be
+                                                          linked — free-text references are not accepted. This action is audited.
+                                            </p>
+                                            <CanonicalDealSelector
+                                                            value={linkMatchId}
+                                                            onChange={(mid) => setLinkMatchId(mid)}
+                                                            testIdPrefix="fw-link-selector"
+                                                          />
+                                            <Label htmlFor="fw-link-reason">Linkage reason (required)</Label>
+                                            <Textarea
+                                                            id="fw-link-reason"
+                                                            value={linkReason}
+                                                            onChange={(e) => setLinkReason(e.target.value)}
+                                                            maxLength={1000}
+                                                            data-testid="fw-link-reason"
+                                                          />
+                                </div>
+                                <DialogFooter>
+                                            <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                                            <Button
+                                                            onClick={handleLink}
+                                                            disabled={linking || !linkMatchId || linkReason.trim() === ""}
+                                                            data-testid="fw-link-confirm"
+                                                          >
+                                                          Link deal
+                                            </Button>
+                                </DialogFooter>
+                      </DialogContent>
+              </Dialog>
+        </div>
+      );
 }
 
-
 function Perm({ label, v, elevated }: { label: string; v: boolean; elevated?: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className={elevated ? "text-sm" : "text-sm"}>{label}</span>
-      <Badge variant={v ? (elevated ? "destructive" : "default") : "secondary"}>{v ? "Enabled" : "Off"}</Badge>
-    </div>
-  );
+    return (
+          <div className="flex items-center justify-between">
+                <span className={elevated ? "text-sm" : "text-sm"}>{label}</span>
+                <Badge variant={v ? (elevated ? "destructive" : "default") : "secondary"}>{v ? "Enabled" : "Off"}</Badge>
+          </div>
+        );
 }

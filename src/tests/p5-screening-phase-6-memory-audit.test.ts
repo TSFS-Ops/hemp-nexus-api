@@ -15,7 +15,7 @@ import {
 const root = resolve(process.cwd());
 const migDir = resolve(root, "supabase/migrations");
 const phase6File = readdirSync(migDir)
-  .filter((f) => f.endsWith(".sql") && f >= "20260626182000")
+  .filter((f) => f.startsWith("20260626182605_"))
   .sort()
   .pop()!;
 const sql = readFileSync(resolve(migDir, phase6File), "utf8");

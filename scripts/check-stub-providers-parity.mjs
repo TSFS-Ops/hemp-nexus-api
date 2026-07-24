@@ -12,8 +12,14 @@ const browserPath = resolve("src/lib/stub-providers.ts");
 const edgePath = resolve("supabase/functions/_shared/stub-providers.ts");
 
 const PINS = [
-  // provider set
-  /key:\s*"cipc"/, /key:\s*"onfido"/, /key:\s*"dow_jones"/, /key:\s*"refinitiv"/,
+  // provider set (neutral keys)
+  /key:\s*"company_registry"/, /key:\s*"identity_document"/,
+  /key:\s*"sanctions_screening"/, /key:\s*"pep_screening"/,
+  // legacy alias map (back-compat)
+  /cipc:\s*"company_registry"/,
+  /onfido:\s*"identity_document"/,
+  /dow_jones:\s*"sanctions_screening"/,
+  /refinitiv:\s*"pep_screening"/,
   // policy metadata (P010 hardening)
   /category:\s*"KYB"/, /category:\s*"Identity"/, /category:\s*"Sanctions\/PEP"/,
   /is_live:\s*false/,

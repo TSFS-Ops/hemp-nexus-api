@@ -28,6 +28,10 @@ const EXEMPT_PATH_PARTS = [
   "docs/p010-stub-provider-labelling",
   // Internal infrastructure spec — names future-integration providers in planning context
   "docs/infrastructure-requirements.md",
+  // Internal platform audit report — governance document that names the stub
+  // providers alongside policy words ("verified"/"approved") to describe the
+  // stub-by-policy posture itself. Not a client-facing product surface.
+  "docs/platform-audit-report.md",
   // P011 — Counterparty Rating Methodology page names the four stub providers in
   // the "Inputs that cannot affect the rating" section, alongside necessary
   // methodology words like "approved" / "verification complete". This is the

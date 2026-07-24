@@ -33,6 +33,7 @@ export const P5B3_RPC_NAMES = [
   "p5b3_admin_review_outcome_v1",
   "p5b3_admin_exit_review_v1",
   "p5b3_funder_record_download_v1",
+    "p5b3_admin_resend_funder_invite_v1",
 ] as const;
 export type P5B3RpcName = (typeof P5B3_RPC_NAMES)[number];
 
@@ -146,6 +147,13 @@ export const p5b3RecordDownload = (args: {
   p_file_type?: string; // server enforces 'pdf'
   p_link_ttl_seconds?: number; // server caps at 604800
 }) => call<string>("p5b3_funder_record_download_v1", args);
+
+// ---- admin: funder user invitations ----
+export const p5b3ResendFunderInvite = (args: { p_user_id: string }) =>
+    call<{ user_id: string; email: string; funder_organisation_id: string; resent_at: string }>(
+          "p5b3_admin_resend_funder_invite_v1",
+          args,
+        );
 
 /** Safe summary edge function name (NOT a public /api/v1/funder/* route). */
 export const P5B3_SAFE_SUMMARY_EDGE_FN = "p5-batch3-funder-summary";

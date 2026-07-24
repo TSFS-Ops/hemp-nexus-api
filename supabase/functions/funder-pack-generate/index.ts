@@ -468,6 +468,8 @@ Deno.serve(async (req) => {
 
       const body = await req.json().catch(() => ({}));
                    const releaseId = String(body?.release_id ?? "");
+    const supersede = body?.supersede === true;
+    const supersedeReason = typeof body?.supersede_reason === "string" ? body.supersede_reason : null;
                    if (!/^[0-9a-f-]{36}$/i.test(releaseId)) {
                            return json({ error: "invalid_release_id" }, 400);
                    }
@@ -555,12 +557,20 @@ Deno.serve(async (req) => {
                   p_file_sha256: fileSha256,
                   p_manifest_sha256: null,
                   p_watermark_template: renderWatermark(WATERMARK_TEMPLATE, wmVars),
+                p_supersede: supersede,
+                p_supersede_reason: supersedeReason,
         },
             );
                    if (sealErr) {
                            // Best-effort cleanup on seal failure so we don't leave orphan PDFs.
                      await admin.storage.from(BUCKET).remove([storagePath]).catch(() => undefined);
-                           return json({ error: "seal_failed", detail: sealErr.message }, 500);
+                           if (/sealed pack already exists/i.test(sealErr.message)) {
+                return json({ error: "supersede_required", detail: sealErr.message }, 409);
+            }
+            if (/p_supersede_reason is required/i.test(sealErr.message)) {
+                return json({ error: "supersede_reason_required", detail: sealErr.message }, 400);
+            }
+            return json({ error: "seal_failed", detail: sealErr.message }, 500);
                    }
 
       return json({

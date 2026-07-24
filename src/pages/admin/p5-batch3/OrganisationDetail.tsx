@@ -5,9 +5,9 @@
  * p5_batch3_funder_users table directly (RLS on the server enforces
  * platform-admin visibility).
  *
- * TODO(backend): a `resend invitation` RPC does not yet exist. The
- * Resend button is wired to display a documented TODO toast and leave
- * an audit-visible note; it does NOT fabricate any backend behaviour.
+  * Resend invitation calls p5b3_admin_resend_funder_invite_v1 directly;
+   * the RPC only allows resending while status='invited' and re-stamps
+    * invited_at/invited_by server-side, with a p5b3_audit trail entry.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -46,6 +46,7 @@ import { P5B3_FUNDER_ROLES, type P5B3FunderRole } from "@/lib/p5-batch3/constant
 import {
   p5b3AssignFunderRole,
   p5b3InviteFunderUser,
+    p5b3ResendFunderInvite,
   p5b3SetFunderUserStatus,
 } from "@/lib/p5-batch3/rpc";
 import {
@@ -88,6 +89,7 @@ export default function P5Batch3OrganisationDetail() {
     newRole: P5B3FunderRole;
   } | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+    const [resendingId, setResendingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!organisationId) return;
@@ -146,13 +148,17 @@ export default function P5Batch3OrganisationDetail() {
     }
   };
 
-  const handleResend = (u: FunderUserRow) => {
-    // TODO(backend): no resend RPC in @/lib/p5-batch3/rpc.ts.
-    // Deferred until a `p5b3_admin_resend_funder_invite_v1` (or equivalent)
-    // is provided. Do NOT fabricate behaviour here.
-    toast.message("Resend not yet available", {
-      description: `A resend endpoint for ${u.email} is pending backend support.`,
-    });
+  const handleResend = async (u: FunderUserRow) => {
+        setResendingId(u.id);
+        try {
+                await p5b3ResendFunderInvite({ p_user_id: u.id });
+                toast.success(`Invitation resent to ${u.email}`);
+                await load();
+        } catch (e) {
+                toast.error((e as Error).message);
+        } finally {
+                setResendingId(null);
+        }
   };
 
   const applyRoleChange = async (reason?: string) => {
@@ -341,6 +347,7 @@ export default function P5Batch3OrganisationDetail() {
             <UserTable
               rows={pending}
               onResend={handleResend}
+                      resendingId={resendingId}
               onDeactivate={(u) => setDeactivating(u)}
               onReactivate={applyReactivate}
               onRoleChange={(user, newRole) => setRoleChange({ user, newRole })}
@@ -368,6 +375,7 @@ export default function P5Batch3OrganisationDetail() {
             <UserTable
               rows={active}
               onResend={handleResend}
+                      resendingId={resendingId}
               onDeactivate={(u) => setDeactivating(u)}
               onReactivate={applyReactivate}
               onRoleChange={(user, newRole) => setRoleChange({ user, newRole })}
@@ -425,9 +433,10 @@ interface TableProps {
   onDeactivate: (user: FunderUserRow) => void;
   onReactivate: (user: FunderUserRow) => void;
   onResend: (user: FunderUserRow) => void;
+    resendingId: string | null;
 }
 
-function UserTable({ rows, onRoleChange, onDeactivate, onReactivate, onResend }: TableProps) {
+function UserTable({ rows, onRoleChange, onDeactivate, onReactivate, onResend, resendingId }: TableProps) {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -478,10 +487,11 @@ function UserTable({ rows, onRoleChange, onDeactivate, onReactivate, onResend }:
                     size="sm"
                     variant="outline"
                     onClick={() => onResend(u)}
-                    title="Resend invitation (backend pending)"
-                  >
-                    <Mail className="h-4 w-4 mr-1" aria-hidden="true" />
-                    Resend
+disabled={resendingId === u.id}
+                                    title="Resend invitation"
+                                  >
+                                  <Mail className="h-4 w-4 mr-1" aria-hidden="true" />
+                    {resendingId === u.id ? "Sending…" : "Resend"}
                   </Button>
                 )}
                 {u.status === "deactivated" ? (

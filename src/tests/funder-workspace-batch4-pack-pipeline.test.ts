@@ -217,7 +217,7 @@ describe("Funder Workspace Batch 4 — client library", () => {
 describe("Funder Workspace Batch 4 — admin UI", () => {
   it("admin release detail exposes a Generate button that calls generateSealedPack", () => {
     expect(ADMIN_RELEASE_DETAIL).toMatch(/data-testid="fw-admin-generate-pack"/);
-    expect(ADMIN_RELEASE_DETAIL).toMatch(/generateSealedPack\(releaseId\)/);
+    expect(ADMIN_RELEASE_DETAIL).toMatch(/generateSealedPack\(releaseId/);
     // Generate button is gated by the shared canGenerateSealedPack helper,
     // which mirrors the server's fw_admin_seal_pack_v1 checks.
     expect(ADMIN_RELEASE_DETAIL).toMatch(/canGenerateSealedPack/);

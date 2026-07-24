@@ -49,6 +49,20 @@ Deno.serve(async (req) => {
       { p_pack_version_id: packVersionId },
     );
     if (authErr) {
+      // Best-effort denial logging for later security review. This must
+      // never block or alter the (opaque) response returned to the caller.
+      try {
+        await userClient.rpc("fw_log_access_event_v1", {
+          p_action: "pack_download",
+          p_object_type: "funder_pack_version",
+          p_object_id: packVersionId,
+          p_result: "denied",
+          p_reason: authErr.message ?? null,
+        });
+      } catch (_e) {
+        // Logging failure must never surface to the funder.
+      }
+      
       // Do not leak internal reasons to funders.
       return json({ error: "not_available" }, 403);
     }

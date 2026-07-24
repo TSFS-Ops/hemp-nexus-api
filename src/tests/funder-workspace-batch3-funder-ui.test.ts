@@ -79,7 +79,7 @@ describe("Funder Workspace Batch 3 — route registration", () => {
 describe("Funder Workspace Batch 3 — funder client scope", () => {
   it("only calls approved read-only RPCs (Batch 6 counter helper); no writes from funder client", () => {
     const rpcCalls = [...FUNDER_CLIENT.matchAll(/\.rpc\("([^"]+)"/g)].map((m) => m[1]);
-    const allowed = new Set(["fw_counters_funder_v1"]);
+        const allowed = new Set(["fw_counters_funder_v1", "fw_log_access_event_v1"]);
     for (const name of rpcCalls) {
       expect(allowed.has(name), `unexpected funder-side RPC ${name}`).toBe(true);
     }

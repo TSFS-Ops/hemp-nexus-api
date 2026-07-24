@@ -1,8 +1,12 @@
 /**
- * P010 — Stub Provider Labelling / Hiding (edge SSOT).
+ * P010 — Stub / not-connected provider labelling (edge SSOT).
  *
  * Mirrored at `src/lib/stub-providers.ts`. The two files MUST stay in sync;
  * `scripts/check-stub-providers-parity.mjs` enforces this at prebuild.
+ *
+ * See the browser SSOT for the LEGACY_PROVIDER_KEY_ALIASES rationale — this
+ * file carries the same back-compat map so historical DB rows that still
+ * hold the deprecated vendor identifiers continue to classify correctly.
  */
 
 export type StubProviderCategory = "KYB" | "Identity" | "Sanctions/PEP";
@@ -42,8 +46,8 @@ const ALLOWED_STATUSES: readonly string[] = [
 
 export const STUB_PROVIDERS: readonly StubProviderEntry[] = [
   {
-    key: "cipc",
-    display: "CIPC",
+    key: "company_registry",
+    display: "Company registry provider",
     domain: "idv",
     category: "KYB",
     is_live: false,
@@ -54,8 +58,8 @@ export const STUB_PROVIDERS: readonly StubProviderEntry[] = [
     allowed_statuses: ALLOWED_STATUSES,
   },
   {
-    key: "onfido",
-    display: "Onfido",
+    key: "identity_document",
+    display: "Identity-document provider",
     domain: "idv",
     category: "Identity",
     is_live: false,
@@ -66,8 +70,8 @@ export const STUB_PROVIDERS: readonly StubProviderEntry[] = [
     allowed_statuses: ALLOWED_STATUSES,
   },
   {
-    key: "dow_jones",
-    display: "Dow Jones",
+    key: "sanctions_screening",
+    display: "Sanctions screening provider",
     domain: "sanctions",
     category: "Sanctions/PEP",
     is_live: false,
@@ -78,8 +82,8 @@ export const STUB_PROVIDERS: readonly StubProviderEntry[] = [
     allowed_statuses: ALLOWED_STATUSES,
   },
   {
-    key: "refinitiv",
-    display: "Refinitiv",
+    key: "pep_screening",
+    display: "PEP screening provider",
     domain: "sanctions",
     category: "Sanctions/PEP",
     is_live: false,
@@ -95,14 +99,28 @@ export type StubProviderKey = (typeof STUB_PROVIDERS)[number]["key"];
 
 export const STUB_PROVIDER_KEYS: readonly string[] = STUB_PROVIDERS.map((p) => p.key);
 
+const LEGACY_PROVIDER_KEY_ALIASES: Readonly<Record<string, string>> = {
+  cipc: "company_registry",
+  onfido: "identity_document",
+  dow_jones: "sanctions_screening",
+  "dow-jones": "sanctions_screening",
+  dowjones: "sanctions_screening",
+  refinitiv: "pep_screening",
+};
+
+function normaliseKey(name: string): string {
+  const k = name.toLowerCase().trim();
+  return LEGACY_PROVIDER_KEY_ALIASES[k] ?? k;
+}
+
 export function isStubProvider(name: string | null | undefined): boolean {
   if (!name) return false;
-  return STUB_PROVIDER_KEYS.includes(name.toLowerCase().trim());
+  return STUB_PROVIDER_KEYS.includes(normaliseKey(name));
 }
 
 export function getStubProvider(name: string | null | undefined): StubProviderEntry | null {
   if (!name) return null;
-  const key = name.toLowerCase().trim();
+  const key = normaliseKey(name);
   return STUB_PROVIDERS.find((p) => p.key === key) ?? null;
 }
 
@@ -151,11 +169,6 @@ export function stubProviderSimulationAllowed(
   return stubProviderVisibleToRole(role) && testModeActive === true;
 }
 
-/**
- * Build the canonical envelope returned when a request asks for a stub
- * provider outside Test Mode. No verification result is created; the
- * case/entity is NOT advanced.
- */
 export function buildStubProviderNotLiveEnvelope(provider: string, requestId: string) {
   return {
     success: false,
@@ -169,11 +182,6 @@ export function buildStubProviderNotLiveEnvelope(provider: string, requestId: st
   };
 }
 
-/**
- * Build the audit-only envelope returned when an admin/dev triggers a
- * stub-provider simulation while Test Mode is active. NO verification or
- * screening result is created.
- */
 export function buildStubProviderTestModeSimulationEnvelope(
   provider: string,
   requestId: string,
