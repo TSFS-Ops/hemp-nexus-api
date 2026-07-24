@@ -723,7 +723,7 @@ function BillingContent() {
 
         {/* Payment Security Note */}
         <p className="text-center text-xs text-muted-foreground">
-          Payments processed securely by Paystack. All prices shown and charged in USD.
+          Payments processed securely through PayFast. All prices shown and charged in USD.
         </p>
 
         {/* Admin-only Phase 2F PayFast sandbox round-trip button.
