@@ -124,14 +124,24 @@ None of the following are PayFast/payment_settlements issues; all are documented
 
 ### Is PR #31 now runtime-proven?
 
-Partially. The schema, RLS, reconciliation, admin-update (aside from the exception action), and list-RPC behaviour are now genuinely runtime-proven. The risk-item integration (exception-marking's inline alert, and both detect_payment_settlement_risks_v1 alert kinds) is runtime-proven to be **broken** in its current form, not working -- this is a real bug this PR should fix before merge, not a proof-harness limitation.
+Yes. Following the follow-up fix applied 2026-07-24 (see "Follow-up fix" below), the schema, RLS, reconciliation, admin-update (including the exception action), list-RPC, and risk-detection behaviour are all now genuinely runtime-proven, not merely statically asserted. 43/43 runtime proof checks pass.
 
 ### Is UI work now unblocked?
 
-The list and admin-update RPCs (aside from the exception action) are unblocked for UI work now that they are runtime-proven, not just statically asserted. Any admin-UI affordance for marking a settlement "exception", and any risk-inbox surfacing of PayFast settlement risk items, should wait for the ON CONFLICT fix above, since both currently fail at the database level.
+Yes. All four governed RPCs -- including the exception-marking action and the risk-detection scan -- are unblocked for UI work now that they are runtime-proven end-to-end.
+
+### Follow-up fix (2026-07-24)
+
+**What the runtime proof found:** the initial runtime-proof run (2026-07-23) surfaced one real, reproducible bug: `admin_risk_items_dedup_key_uniq` is a **partial** unique index (`ON public.admin_risk_items (dedup_key) WHERE dedup_key IS NOT NULL`), but `payment_settlement_mark_v1`'s exception action and both inserts in `detect_payment_settlement_risks_v1` used a plain `ON CONFLICT (dedup_key)`. Postgres cannot use a partial unique index as an arbiter for a plain `ON CONFLICT` target unless the conflict clause's own predicate matches the index's predicate, so every affected call raised `there is no unique or exclusion constraint matching the ON CONFLICT specification`.
+
+**What was fixed:** all three affected `ON CONFLICT (dedup_key)` clauses in `supabase/migrations/20260723160000_payfast_settlement_tracking_phase1.sql` were changed to `ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO UPDATE ...`, so the conflict target's predicate now matches the partial unique index exactly. Commit `0fd475d`. No other lines, files, or behaviour were touched.
+
+**Why the fix was limited to partial-index-compatible ON CONFLICT:** every insert into `admin_risk_items` in this PR always supplies a non-null `dedup_key`, so adding the `WHERE dedup_key IS NOT NULL` predicate to the conflict target changes nothing about which rows are matched or updated -- it only tells Postgres which existing index to use as the arbiter. This is the minimal, behaviour-preserving fix; it does not change the index definition, the RPCs' business logic, wallet/ledger/token_purchases logic, PayFast checkout, PayFast ITN, or Paystack.
+
+**Final proof result:** re-running the PayFast Settlement Runtime Proof workflow (run #12, commit `0fd475d`) now reports `RUNTIME_PROOF_PASSED: all 43 checks passed`, including the previously-failing exception-marking and risk-detection idempotency checks. The 5 pre-existing, unrelated repo-wide CI failures on this PR (dependency audit, E2E POI mint, lint/typecheck/test/build, schema drift, Phase 1A support behavioural security) are unchanged by this fix.
 
 ## Blocked items
 
-None of the required Phase 1 backend work is blocked. The items listed under Limitations above are deferred by design, not blocked by missing information needed to proceed with Phase 1 itself. See "Runtime behavioural proof" above for one confirmed, reproducible bug (ON CONFLICT vs. a partial unique index on admin_risk_items) that this PR should fix before merge -- it affects the exception-marking action and the risk-detection RPC only, not the schema, RLS, reconciliation, or list-RPC behaviour, all of which are now runtime-proven.
+None of the required Phase 1 backend work is blocked. The items listed under Limitations above are deferred by design, not blocked by missing information needed to proceed with Phase 1 itself. The one confirmed, reproducible bug found by the runtime proof (ON CONFLICT vs. a partial unique index on admin_risk_items) was fixed on 2026-07-24 -- see "Follow-up fix" above. All four governed RPCs, the schema, RLS, reconciliation, and risk-detection behaviour are now runtime-proven, with 43/43 proof checks passing.
 
 Final status: PAYFAST_SETTLEMENT_TRACKING_PHASE_1_PR_READY
