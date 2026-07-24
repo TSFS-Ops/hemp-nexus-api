@@ -72,6 +72,7 @@ interface PurchasesListProps {
 
 export function PurchasesList({ orgId }: PurchasesListProps) {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [activePurchase, setActivePurchase] = useState<PurchaseRow | null>(null);
 
   const { data } = useQuery({
