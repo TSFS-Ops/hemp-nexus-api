@@ -24,23 +24,26 @@
 # executed by PostgREST/GoTrue, real PayFast ITN traffic, browser sessions,
 # or production data behaviour.
 #
-# Known, pre-existing, unrelated environment gaps: plain postgres:15 lacks
-# several Supabase-platform-only features that some older, unrelated
-# migrations in this repository depend on (pg_cron scheduling, pg_net HTTP
-# calls, the pg_graphql/pgjwt/supabase_vault extensions, and the built-in
-# supabase_realtime publication used for realtime replication). Each
-# migration file is applied WITHOUT ON_ERROR_STOP, matching psql's default
-# behaviour of continuing past an individual failing statement to the next
-# statement in the same file/session -- this avoids a single known,
-# unrelated, environment-only statement failure (e.g. one ALTER PUBLICATION
-# supabase_realtime line) truncating the rest of that migration file, which
-# could otherwise hide real schema this proof depends on. After all
-# migrations are applied, the full combined log is scanned for every
-# "ERROR:" line; any such line is required to match one of the specific,
-# named, known Supabase-platform gaps above, or the job fails closed. This
-# keeps the job fail-closed for anything that could plausibly be related to
-# PR #31 / payment_settlements while tolerating only named, pre-existing,
-# environment-only gaps.
+# Known, pre-existing, unrelated environment gaps: plain postgres:15 (with
+# no seed/production data) lacks several Supabase-platform-only features
+# that many older, unrelated migrations in this repository depend on --
+# pg_cron scheduling (extension + "cron" schema + cron.job), pg_net,
+# pgjwt, pg_graphql, pgmq, supabase_vault (including vault.decrypted_secrets),
+# the "realtime" schema, and the built-in supabase_realtime publication.
+# A handful of older migrations also assume specific seed/production rows
+# already exist (three narrowly-named foreign-key violations on org_id) or
+# embed a self-contained fixture assertion unrelated to payments ("Test
+# prerequisite failed: Dove profile not found"). Each migration file is
+# applied WITHOUT ON_ERROR_STOP, matching psql's default behaviour of
+# continuing past an individual failing statement to the next statement in
+# the same file -- this avoids a single known, unrelated, environment-only
+# statement failure truncating the rest of that migration file, which could
+# otherwise hide real schema this proof depends on. After all migrations are
+# applied, the full combined log is scanned for every "ERROR:" line; any
+# such line is required to match one of the specific, named, known gaps
+# above, or the job fails closed. This keeps the job fail-closed for
+# anything that could plausibly be related to PR #31 / payment_settlements
+# while tolerating only named, pre-existing, environment-only gaps.
 #
 # The final gate step in the proof SQL itself raises an exception (non-zero
 # psql exit) if any individual behavioural check failed, so a green job
@@ -124,6 +127,7 @@ jobs:
           CREATE TABLE IF NOT EXISTS auth.users (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             email text,
+            email_confirmed_at timestamptz,
             raw_user_meta_data jsonb DEFAULT '{}'::jsonb,
             created_at timestamptz DEFAULT now()
           );
@@ -186,7 +190,17 @@ jobs:
             'extension "pgjwt" is not available'
             'extension "pg_graphql" is not available'
             'extension "supabase_vault" is not available'
+            'extension "pgmq" is not available'
             'publication "supabase_realtime" does not exist'
+            'schema "cron" does not exist'
+            'relation "cron.job" does not exist'
+            '_cron_jobs() does not exist'
+            'schema "realtime" does not exist'
+            'relation "vault.decrypted_secrets" does not exist'
+            'Test prerequisite failed'
+            'api_request_logs_org_id_fkey'
+            'org_sso_configs_org_id_fkey'
+            'compliance_cases_org_id_fkey'
           )
 
           grep -n 'ERROR:' proof-artifact/20-migrate.txt > /tmp/all_errors.txt || true
@@ -209,7 +223,7 @@ jobs:
             cat /tmp/unexpected_errors.txt | tee -a proof-artifact/20-migrate.txt
             exit 1
           fi
-          echo "MIGRATIONS_APPLIED=ok (all ERROR lines matched known, pre-existing, unrelated Supabase-platform gaps)" | tee -a proof-artifact/20-migrate.txt
+          echo "MIGRATIONS_APPLIED=ok (all ERROR lines matched known, pre-existing, unrelated gaps)" | tee -a proof-artifact/20-migrate.txt
 
       - name: Run PayFast settlement runtime proof [fail-closed]
         run: |
