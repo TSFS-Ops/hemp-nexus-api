@@ -64,8 +64,8 @@ type GateGroup = "upstream" | "wad";
 
 const GATES: { key: keyof Omit<BypassState, "enabled" | "note" | "enabled_at" | "expires_at">; label: string; description: string; group: GateGroup }[] = [
   // ── Upstream provider gates (skip the external compliance integrations) ──
-  { key: "idv", label: "Identity verification (IDV)", description: "Skip the IDV provider call. Entities auto-marked as verified. (Onfido / CIPC are not live yet — no external check is performed.)", group: "upstream" },
-  { key: "sanctions", label: "Sanctions & PEP screening", description: "Skip the sanctions/PEP provider call. Synthesises a 'clear' screening result. (Dow Jones / Refinitiv are not live yet — no external check is performed.)", group: "upstream" },
+  { key: "idv", label: "Identity verification (IDV)", description: "Skip the IDV provider call. Entities auto-marked as verified. (External identity-document and company-registry providers are not currently connected — no external check is performed.)", group: "upstream" },
+  { key: "sanctions", label: "Sanctions & PEP screening", description: "Skip the sanctions/PEP provider call. Synthesises a 'clear' screening result. (External sanctions/PEP screening providers are not currently connected — no external check is performed.)", group: "upstream" },
   { key: "kyb", label: "Business verification (KYB)", description: "Skip company registry checks. Covered by the IDV bypass for company-type entities.", group: "upstream" },
   { key: "ubo", label: "Beneficial ownership (UBO)", description: "Treat ownership as 100% verified across all chain depths.", group: "upstream" },
   { key: "authority", label: "Authority-to-bind (ATB)", description: "Treat the signing person as having a verified active authority record.", group: "upstream" },

@@ -1,26 +1,34 @@
 /**
- * P010 — Stub Provider Labelling / Hiding (browser SSOT).
+ * P010 — Stub / not-connected provider labelling (browser SSOT).
  *
  * Mirrored at `supabase/functions/_shared/stub-providers.ts`. The two files MUST
  * stay in sync; `scripts/check-stub-providers-parity.mjs` enforces this at prebuild.
  *
- * Policy (P010, accepted by client 2026-06-19; hardened 2026-06-20):
- *   - CIPC, Onfido, Dow Jones, and Refinitiv are NOT live yet.
- *   - They MUST NOT execute any real external check.
- *   - Client-facing surfaces MUST NOT name them or expose any control.
- *   - Internal/admin surfaces MAY name them, but only with the approved
- *     "not live yet" label and a disabled control unless Test Mode is active.
- *   - No stub result may use the forbidden words.
- *   - Even Test Mode MUST NOT make a stub provider look live; the only
+ * Policy (P010, hardened; deprecated-provider cleanup 2026-07-24):
+ *   - The platform ships with NO live external compliance provider connected.
+ *   - Stub categories are surfaced only on admin/dev diagnostic surfaces, with
+ *     the approved "not connected" label and a disabled control unless Test
+ *     Mode is active.
+ *   - No stub result may use the forbidden overclaim words.
+ *   - Even Test Mode MUST NOT make a stub category look live; the only
  *     allowed Test Mode outcome is an audit-only `test_mode_bypass` envelope.
+ *
+ * IMPORTANT: This file intentionally contains a private
+ * `LEGACY_PROVIDER_KEY_ALIASES` map that keeps back-compat with historical
+ * database rows / audit payloads that still carry the deprecated vendor
+ * identifiers (cipc / onfido / dow_jones / refinitiv). The map exists ONLY
+ * to make `isStubProvider` continue to classify legacy rows correctly. It is
+ * allowlisted in `scripts/check-no-deprecated-compliance-provider-names.mjs`
+ * for that reason. Do NOT reference these legacy strings from any new code,
+ * UI copy, or documentation.
  */
 
 export type StubProviderCategory = "KYB" | "Identity" | "Sanctions/PEP";
 
 export interface StubProviderEntry {
-  /** Internal technical id. Only surfaced on admin/dev/diagnostic surfaces. */
+  /** Internal, provider-neutral technical id. Admin/dev surfaces only. */
   readonly key: string;
-  /** Display name. Only surfaced on admin/dev/diagnostic surfaces. */
+  /** Neutral display name. Admin/dev surfaces only. */
   readonly display: string;
   /** Legacy domain tag, kept for back-compat with existing call sites. */
   readonly domain: "idv" | "sanctions";
@@ -56,8 +64,8 @@ const ALLOWED_STATUSES: readonly string[] = [
 
 export const STUB_PROVIDERS: readonly StubProviderEntry[] = [
   {
-    key: "cipc",
-    display: "CIPC",
+    key: "company_registry",
+    display: "Company registry provider",
     domain: "idv",
     category: "KYB",
     is_live: false,
@@ -68,8 +76,8 @@ export const STUB_PROVIDERS: readonly StubProviderEntry[] = [
     allowed_statuses: ALLOWED_STATUSES,
   },
   {
-    key: "onfido",
-    display: "Onfido",
+    key: "identity_document",
+    display: "Identity-document provider",
     domain: "idv",
     category: "Identity",
     is_live: false,
@@ -80,8 +88,8 @@ export const STUB_PROVIDERS: readonly StubProviderEntry[] = [
     allowed_statuses: ALLOWED_STATUSES,
   },
   {
-    key: "dow_jones",
-    display: "Dow Jones",
+    key: "sanctions_screening",
+    display: "Sanctions screening provider",
     domain: "sanctions",
     category: "Sanctions/PEP",
     is_live: false,
@@ -92,8 +100,8 @@ export const STUB_PROVIDERS: readonly StubProviderEntry[] = [
     allowed_statuses: ALLOWED_STATUSES,
   },
   {
-    key: "refinitiv",
-    display: "Refinitiv",
+    key: "pep_screening",
+    display: "PEP screening provider",
     domain: "sanctions",
     category: "Sanctions/PEP",
     is_live: false,
@@ -109,14 +117,33 @@ export type StubProviderKey = (typeof STUB_PROVIDERS)[number]["key"];
 
 export const STUB_PROVIDER_KEYS: readonly string[] = STUB_PROVIDERS.map((p) => p.key);
 
+/**
+ * Back-compat only: historical DB rows / audit payloads may still carry the
+ * old vendor identifiers. Normalise them to the neutral keys for lookup.
+ * DO NOT USE these strings anywhere else in the code base.
+ */
+const LEGACY_PROVIDER_KEY_ALIASES: Readonly<Record<string, string>> = {
+  cipc: "company_registry",
+  onfido: "identity_document",
+  dow_jones: "sanctions_screening",
+  "dow-jones": "sanctions_screening",
+  dowjones: "sanctions_screening",
+  refinitiv: "pep_screening",
+};
+
+function normaliseKey(name: string): string {
+  const k = name.toLowerCase().trim();
+  return LEGACY_PROVIDER_KEY_ALIASES[k] ?? k;
+}
+
 export function isStubProvider(name: string | null | undefined): boolean {
   if (!name) return false;
-  return STUB_PROVIDER_KEYS.includes(name.toLowerCase().trim());
+  return STUB_PROVIDER_KEYS.includes(normaliseKey(name));
 }
 
 export function getStubProvider(name: string | null | undefined): StubProviderEntry | null {
   if (!name) return null;
-  const key = name.toLowerCase().trim();
+  const key = normaliseKey(name);
   return STUB_PROVIDERS.find((p) => p.key === key) ?? null;
 }
 

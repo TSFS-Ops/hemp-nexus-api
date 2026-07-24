@@ -102,7 +102,7 @@ export function DecisionForm({ open, onOpenChange, onCreated }: Props) {
             </div>
           </div>
           <div>
-            <Label>Decision key (e.g. country.ZA, provider.cipc)</Label>
+            <Label>Decision key (e.g. country.ZA, provider.company_registry)</Label>
             <Input value={decisionKey} onChange={(e) => setDecisionKey(e.target.value)} />
           </div>
           <div>

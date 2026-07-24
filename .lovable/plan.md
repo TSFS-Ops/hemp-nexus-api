@@ -1,209 +1,349 @@
-# Batch V-UI — VerifyNow IDV Client-Facing Screens & Admin Review
+## Deprecated compliance provider cleanup
 
-Purpose: make the Batch V backend usable by David/Daniel/James through the UI so the client smoke test is runnable. No backend routing logic changes; only the surfaces and one narrow fail-closed hardening on the gate.
+Remove all customer/code/docs references to **CIPC, Onfido, Dow Jones, Refinitiv** (and variants). Preserve VerifyNow / `idv-person-verify`, PayFast, Paystack (legacy), Resend, Sentry, Companies House.
 
-## Deliverables
+### Approach
 
-### 1. User IDV start screen — `/desk/idv/start`
+Replace vendor identifiers with provider-neutral category keys everywhere runtime code and tests depend on them:
 
-New page `src/pages/desk/idv/IdvStart.tsx` (registered in `src/App.tsx` under `/desk/*` via Desk router, or as a top-level `RequireAuth` route).
 
-Fields, using existing SSOT `src/lib/idv/route-table.ts`:
+| Old key     | New key               |
+| ----------- | --------------------- |
+| `cipc`      | `company_registry`    |
+| `onfido`    | `identity_document`   |
+| `dow_jones` | `sanctions_screening` |
+| `refinitiv` | `pep_screening`       |
 
-- Country selector labelled "Select the country that issued your ID document" — reads countries from `IDV_ROUTE_TABLE` plus placeholders (GH/KE/UG/ZM/CI) plus "Other".
-- Document type selector — filtered by chosen country from the route table; disabled until country picked.
-- Details textarea (document number etc.) — plain text, no validation beyond length.
-- Consent checkbox: "I confirm that I have permission to submit this identity check".
-- Submit button: "Submit identity check".
 
-On submit:
+Display / prose:
 
-- Resolves route via `resolveIdvRoute({ document_country, document_type })`.
-- If `provider_not_available` → posts to `idv-manual-review` to open a `manual_review_required` case (no live provider call), then shows safe status.
-- Otherwise → posts to `idv-verify` (existing edge function).
-- Renders safe status wording from `IDV_OUTCOME_MAP` and never displays raw provider payload.
+- "CIPC" → "company registry provider"
+- "Onfido" → "identity-document provider"
+- "Dow Jones" → "sanctions screening provider"
+- "Refinitiv" → "PEP screening provider"
+- Lists like "CIPC, Onfido, Dow Jones, Refinitiv are stubbed" → "External compliance providers are not currently connected."
 
-Banned wording guard: unit test scans page source for verified/cleared/approved/passed/risk-free/KYB cleared/company verified/sanctions clear/live-provider verified.
+### Files to change
 
-### 2. IDV status widget — `IdvStatusWidget.tsx`
+**SSOT (rewritten, neutral entries):**
 
-Component under `src/components/idv/IdvStatusWidget.tsx`. Reads latest `p5scr_subjects` + latest check for the current user. Shows: document country, document type, current safe status label, next action, last updated. Never renders full ID number, provider payload, photos, selfies, biometrics, private notes.
+- `src/lib/stub-providers.ts`
+- `supabase/functions/_shared/stub-providers.ts`
 
-Mounted on:
+**Runtime code:**
 
-- `/desk` landing (top of user dashboard).
-- User profile/settings sidebar entry.
+- `src/lib/evidence-rating.ts`, `supabase/functions/_shared/evidence-rating.ts` (allowed-provider list)
+- `src/lib/idv/provider-registry.ts` (decommissioned list + comment)
+- `src/lib/p5-batch8/registry.ts` (preferred_providers → neutral text)
+- `src/lib/registry-client-decisions-19a.ts` (`cipc_or_registry_evidence` → `company_registry_evidence`)
+- `src/components/admin/TestModeBypassPanel.tsx` (help text neutralised)
+- `src/components/registry/DecisionForm.tsx` (placeholder)
+- `src/pages/docs/CounterpartyRatingMethodology.tsx` (public docs prose)
+- `supabase/functions/_shared/demo-mode-guard.ts` (comment)
+- `supabase/functions/idv-verify/index.ts` (rename `verifyWithCIPC`/`verifyWithOnfido` → neutral; allow-lists use new keys; env-var references removed)
+- `supabase/functions/provider-stub-simulate/index.test.ts` (payload provider)
 
-### 3. Subject provisioning + fail-closed hardening
+**VerifyNow protection:**
 
-Two-pronged fix for the "no subject → soft allow" gap:
+- `supabase/functions/idv-person-verify/**` — untouched except that its smoke test's pins for the sibling `idv-verify` allow-lists are updated to match the new neutral keys.
 
-- On IDV start submit, call a new edge function `idv-subject-provision` (or extend `idv-verify`) that upserts a `p5scr_subjects` row for the actor (`user_id`, `org_id`).
-- Harden `supabase/functions/_shared/idv-actor-gate.ts` so `no_subject` becomes fail-closed for all 7 controlled actions. Blocker code `IDV_REQUIRED_NO_SUBJECT`, user wording "Identity verification required before this action".
-- Add DB migration only if needed to allow upsert; existing table has `user_id`/`org_id` columns per current code.
+**Guards / scripts:**
 
-### 4. Friendly blocker messages on controlled actions
+- `scripts/check-stub-providers-parity.mjs` — pin the neutral keys instead of vendor names.
+- `scripts/check-stub-provider-copy-drift.mjs` — repurpose to enforce the deprecation (fail on any vendor name anywhere in `src/**` and `docs/**`).
+- `scripts/check-evidence-rating-parity.mjs` — pin neutral keys.
+- Registry batch4/5/6 & bank-verification guards — keep their existing "banned name" lists (they enforce the same policy). Add these guards to the new deprecation-guard exemption list.
+- **New:** `scripts/check-no-deprecated-compliance-provider-names.mjs` — repo-wide deny of `CIPC / Onfido / Dow Jones / Refinitiv` (and variants) across `src/**`, `supabase/functions/**`, `docs/**`, `evidence/**`, `public/**`, `README*`. Allowlist: itself, `supabase/migrations/**` (historical, untouched), the other guard scripts that also carry banned-name lists.
+- Wire the new guard into the existing `prebuild` script chain.
 
-Shared component `src/components/idv/IdvBlockerNotice.tsx` — renders a warning banner given a blocker code, using SSOT wording from `controlled-action-gate.ts`.
+**Tests updated to new keys:**
 
-Wire into the six client-triggered action buttons/screens:
+- `src/tests/p010-stub-provider-labelling.test.ts`
+- `src/tests/p011-counterparty-rating-methodology.test.ts`
+- `src/tests/batch-v-wording.test.ts`, `batch-v-wire-per-path-consumption.test.ts`, `batch-v-wire-controlled-action-gates.test.ts`, `batch-v-ui-fix-4-real-idv-and-queue.test.ts`
+- `src/tests/batch-4-authority-bank-detail-status.test.ts`, `batch-5-institutional-api-management.test.ts`, `public-api-v1-sandprod-batch6-usage-limits.test.ts`
+- `supabase/functions/idv-verify/o_production_lockout_smoke_test.ts`
+- `supabase/functions/idv-person-verify/idv_person_verify_smoke_test.ts`
 
-- WaD seal (WaD detail page).
-- Finality (`/desk/p5-batch4/…`).
-- Funder-ready (`/funder/p5-batch3/…`).
-- POI binding action (POI detail page).
-- Evidence approval (registry claim review admin/desk page).
-- Transaction approval (trade approval page).
+**Docs / evidence prose (bulk neutralise via targeted rewrites, not sed):**
 
-Each caller catches HTTP 409 with `blocker_code` starting `IDV_` and renders `IdvBlockerNotice`. No raw JSON, no stack traces.
+- `docs/platform-audit-report.md`
+- `docs/infrastructure-requirements.md`
+- `RELEASE_GATE.md`
+- Evidence README files under `evidence/**` that mention the four vendors — replace vendor names with neutral wording and append a one-line quarantine note: *"Earlier placeholder provider names have been removed. The platform uses provider-neutral compliance categories unless and until a specific provider is formally approved."*
 
-### 5. Admin manual-review queue — `/admin/idv-review`
+### Explicitly out of scope
 
-New page `src/pages/admin/idv/IdvReviewQueue.tsx` + detail `IdvReviewCase.tsx`. `RequireAuth role="platform_admin"`.
+- No changes to `supabase/migrations/**` (historical).
+- No RLS / grant / schema / enum edits.
+- No secret rotation; env-var names removed from docs/code only where safe.
+- No VerifyNow runtime, adapter, contract-map, or routing changes.
+- No frontend publish.
 
-- List view: cases where `p5scr_subjects.status ∈ {manual_review_required, blocked_pending_admin_decision, provider_error, provider_pending, provider_not_available}`. Filter by category `idv_person`.
-- Detail view: person, document country/type, provider state, reason, admin note textarea, decision dropdown (existing enum from `idv-manual-review-shape.ts`). Save → calls existing `idv-manual-review` edge function.
-- Post-decision: safe status displayed ("Identity review completed" for `manual_review_accepted`).
+### Validation
 
-### 6. Funder-safe IDV summary
+- `rg -i -e 'cipc|onfido|dow.?jones|refinitiv'` across `src/`, `docs/`, `evidence/`, `public/`, `README*` returns **only** the new deprecation guard file.
+- Prebuild guard chain passes (`check-stub-providers-parity`, `check-stub-provider-copy-drift` repurposed, new deprecation guard, existing registry batch guards).
+- Vitest suites listed above pass with the neutral keys.
+- VerifyNow (`idv-person-verify`) files remain byte-identical apart from smoke-test pins.
+- Build (`bun run build`) green.
 
-Component `src/components/idv/FunderIdvSummary.tsx`. Mounted in `src/pages/funder/p5-batch3/components/P5B3FunderShell.tsx` (existing shell). Uses same status label whitelist as user widget. Never renders private data.
+### Deliverables reported at end
 
-### 7. Person-only wording on company screens
-
-Add small "Representative identity review completed — Company readiness still depends on other requirements" note wherever a representative IDV status is shown on a company profile. Reuse existing `P5B4ProviderSafeLabel` / `P5B3FunderSafeLabel` for label safety.
-
-### 8. Tests — `src/tests/batch-v-ui-*.test.ts`
-
-- `batch-v-ui-idv-start.test.ts` — renders start screen; ZA/NG routes visible; placeholders route to provider_not_available; nationality/residence/company country are not present as inputs; consent + submit exist.
-- `batch-v-ui-blocker-notice.test.ts` — six controlled actions render `IdvBlockerNotice` on 409 with `IDV_*` blocker codes; no raw JSON/stack trace.
-- `batch-v-ui-admin-queue.test.ts` — queue renders, decision form submits to `idv-manual-review`, safe status shown.
-- `batch-v-ui-funder-summary.test.ts` — funder view only shows whitelisted status labels; no private fields.
-- `batch-v-ui-wording-guard.test.ts` — scans all new UI files for banned wording.
-- `batch-v-ui-no-subject-fail-closed.test.ts` — updated `idv-actor-gate.ts` returns/raises fail-closed when no subject row.
-- `batch-v-ui-client-boundary.test.ts` — no VerifyNow secret/adapter referenced in new UI files.
-
-All existing Batch V, V-Wire, and Batch O tests must remain green.
-
-### 9. Evidence
-
-`evidence/batch-v-ui-idv-smoke-test-readiness/README.md` — what shipped, where each user role clicks, subject-provisioning behaviour, smoke-test coverage (which of the 15 items are now UI-runnable vs dev-only, expected Test 7 API + Test 15 log check remain dev-only), files changed, test results, residual risks, final marker `BATCH_V_UI_CLIENT_SMOKE_TEST_READY`.
-
-## Technical notes
-
-```text
-src/
-  pages/desk/idv/IdvStart.tsx                    (new)
-  pages/admin/idv/IdvReviewQueue.tsx             (new)
-  pages/admin/idv/IdvReviewCase.tsx              (new)
-  components/idv/IdvStatusWidget.tsx             (new)
-  components/idv/IdvBlockerNotice.tsx            (new)
-  components/idv/FunderIdvSummary.tsx            (new)
-  components/idv/idv-status-labels.ts            (SSOT label whitelist)
-  App.tsx                                        (register /desk/idv/start and /admin/idv/*)
-  tests/batch-v-ui-*.test.ts                     (7 files)
-
-supabase/functions/
-  _shared/idv-actor-gate.ts                      (fail-closed on no_subject)
-  idv-subject-provision/index.ts                 (new, or fold into idv-verify)
-
-evidence/batch-v-ui-idv-smoke-test-readiness/README.md   (new)
-```
-
-Hard rules honoured:
-
-- No new provider; VerifyNow adapter untouched.
-- `VERIFYNOW_MODE=sandbox` unchanged; no secret ever imported into `src/**`.
-- All new UI reads status from server; no client-side gate decisions.
-- Company/funder/finality/API-ready remain untouched by IDV alone.
-- Banned wording enforced by test.
-
-## Out of scope
-
-- Any real live VerifyNow call.
-- KYB, CIPC, Companies House, Onfido, Sumsub, Didit, ComplyCube, Dilisense, Sanctions.io, OMB, bank verification.
-- Changes to Batch O trust-signal containment or Batch V routing rules.
-- Production mode switch.  
+Inventory, files changed, wording replacements, tests run + results, VerifyNow confirmation, verdict `DEPRECATED_COMPLIANCE_PROVIDER_REFERENCES_REMOVED_VERIFYNOW_INTACT` (or `_PARTIAL_[reason]`).  
   
-This is the right scope.
-  It is clean, practical, and it solves the exact problem Lovable found: **the backend exists, but the client cannot click through it yet.**
-  I would proceed with this, but I would make **three small changes before giving final approval**.
-  ## **1. Be careful with “DB migration only if needed”**
-  I would avoid giving permission for a migration unless absolutely unavoidable.
-  Change this:
-  Add DB migration only if needed to allow upsert.
-  To this:
-  ```text
-  Do not add a migration unless the existing schema makes subject provisioning impossible.
+Deprecated compliance provider cleanup
 
-  First use the existing `p5scr_subjects` structure.
+Remove all customer/code/docs references to CIPC, Onfido, Dow Jones, Refinitiv and variants. Preserve VerifyNow / idv-person-verify, PayFast, Paystack where still genuinely legacy/internal, Resend, Sentry, Lovable Send and Companies House.
 
-  If the existing table cannot safely support the required subject upsert, stop and report the exact missing field or constraint before adding a migration.
-  ```
-  Reason: you are trying to avoid new schema risk right before client smoke testing.
-  ## **2. Funder-ready UI path may be admin-side, not funder-side**
-  This part may be slightly confused:
-  Funder-ready (`/funder/p5-batch3/…`)
-  A funder view usually **sees** readiness. It should not necessarily **grant** funder-ready status.
-  I would change it to:
-  ```text
-  Funder-ready gate:
-  - wire friendly blocker rendering wherever an admin/internal user attempts to grant or expose funder-ready status;
-  - on funder-facing pages, show only the safe not-ready/readiness summary.
-  ```
-  Reason: funders should not be controlling readiness unless the platform already works that way.
-  ## **3. Evidence approval path needs to be specific**
-  “registry claim review admin/desk page” may be correct, but if there are several evidence approval paths, they may only wire one.
-  Add:
-  ```text
-  Search for every existing evidence approval / accept / review-complete action that changes readiness or accepts evidence.
+Do not remove Companies House references. Companies House is not part of this deprecated-provider cleanup.
 
-  Wire the IDV blocker notice on each user/admin screen that can trigger a controlled evidence approval.
+Objective:
 
-  If any approval path is not wired, list it clearly in evidence with the reason.
-  ```
-  Reason: you do not want hidden approval paths left untested.
-  ## **Final approval note to send**
-  Use this:
-  ```text
-  Please proceed with Batch V-UI, subject to these three clarifications.
+Replace deprecated vendor identifiers with provider-neutral category keys everywhere runtime code and tests depend on them, without breaking current VerifyNow, IDV, compliance, registry, funder, POI, WaD, billing, admin or API flows.
 
-  1. Subject provisioning / schema
+Preferred key mapping:
 
-  Do not add a migration unless the existing schema makes subject provisioning impossible.
+| Old key | New key |
 
-  First use the existing `p5scr_subjects` structure.
+|---|---|
 
-  If the existing table cannot safely support the required subject upsert, stop and report the exact missing field or constraint before adding a migration.
+| cipc | company_registry |
 
-  2. Funder-ready wording
+| onfido | identity_document |
 
-  Please distinguish between the internal/admin action that grants or exposes funder-ready status and the external funder view.
+| dow_jones | sanctions_screening |
 
-  Wire friendly blocker rendering wherever an admin/internal user attempts to grant or expose funder-ready status.
+| refinitiv | pep_screening |
 
-  On funder-facing pages, show only the safe not-ready/readiness summary.
+Display / prose replacements:
 
-  Do not give funders raw provider detail or readiness-control powers unless such powers already exist.
+- “CIPC” → “company registry provider”
 
-  3. Evidence approval coverage
+- “Onfido” → “identity-document provider”
 
-  Search for every existing evidence approval / accept / review-complete action that changes readiness or accepts evidence.
+- “Dow Jones” → “sanctions screening provider”
 
-  Wire the IDV blocker notice on each user/admin screen that can trigger a controlled evidence approval.
+- “Refinitiv” → “PEP screening provider”
 
-  If any approval path is not wired, list it clearly in the evidence README with the reason.
+- “CIPC, Onfido, Dow Jones, Refinitiv are stubbed” → “External compliance providers are not currently connected.”
 
-  Everything else in the Batch V-UI scope is approved.
+Important persistence rule:
 
-  The goal remains:
+If any deprecated provider key is persisted in database rows, audit payloads, enum values, migration-created constraints, snapshots, or historical records, do not rename it destructively in this batch. Add provider-neutral aliases or compatibility mapping instead, and document the remaining historical key separately.
 
-  - make the client smoke test runnable by normal users and admins;
-  - keep VerifyNow in sandbox;
-  - do not add new providers;
-  - do not change routing logic;
-  - do not weaken Batch O / Batch V protections;
-  - keep person IDV separate from company verification;
-  - no raw provider/private data leakage;
-  - final evidence marker should only be `BATCH_V_UI_CLIENT_SMOKE_TEST_READY` if the UI is actually runnable.
-  ```
+Explicitly out of scope:
+
+- No edits to historical migrations unless absolutely unavoidable.
+
+- No RLS changes.
+
+- No grant changes.
+
+- No schema drops.
+
+- No enum drops.
+
+- No secret rotation.
+
+- No VerifyNow runtime, adapter, contract-map or routing changes.
+
+- No frontend publish.
+
+- No production provider calls.
+
+- No real identity data.
+
+Files / areas to inspect and update:
+
+- src/**
+
+- supabase/functions/**
+
+- scripts/**
+
+- docs/**
+
+- evidence/**
+
+- public/**
+
+- README*
+
+- tests and fixtures
+
+- provider registry/stub files
+
+- seed/demo data
+
+- comments/docstrings
+
+- CI/prebuild guards
+
+Specific files to check:
+
+- src/lib/stub-providers.ts
+
+- supabase/functions/_shared/stub-providers.ts
+
+- src/lib/evidence-rating.ts
+
+- supabase/functions/_shared/evidence-rating.ts
+
+- src/lib/idv/provider-registry.ts
+
+- src/lib/p5-batch8/registry.ts
+
+- src/lib/registry-client-decisions-19a.ts
+
+- src/components/admin/TestModeBypassPanel.tsx
+
+- src/components/registry/DecisionForm.tsx
+
+- src/pages/docs/CounterpartyRatingMethodology.tsx
+
+- supabase/functions/_shared/demo-mode-guard.ts
+
+- supabase/functions/idv-verify/index.ts
+
+- supabase/functions/provider-stub-simulate/index.test.ts
+
+- scripts/check-stub-providers-parity.mjs
+
+- scripts/check-stub-provider-copy-drift.mjs
+
+- scripts/check-evidence-rating-parity.mjs
+
+- relevant Vitest and Deno smoke tests
+
+VerifyNow protection:
+
+Before and after cleanup, confirm:
+
+- supabase/functions/idv-person-verify/** still exists.
+
+- VerifyNow adapter files still exist.
+
+- provider-contract-map still contains the confirmed VerifyNow routes.
+
+- ZA said_basic / ZA Home Affairs / NG NIN mappings are unchanged.
+
+- IDV diagnostic work remains intact.
+
+- No VerifyNow runtime code was changed except smoke-test pins if absolutely necessary.
+
+Guard requirement:
+
+Add or update a guard script:
+
+scripts/check-no-deprecated-compliance-provider-names.mjs
+
+It should fail on deprecated provider names across:
+
+- src/**
+
+- supabase/functions/**
+
+- docs/**
+
+- evidence/**
+
+- public/**
+
+- README*
+
+Allowlist only:
+
+- the guard’s own banned-name list;
+
+- existing guard scripts that contain banned-name lists;
+
+- supabase/migrations/** as historical untouched files;
+
+- any unavoidable historical evidence reference, with explicit justification.
+
+Prefer zero remaining references outside allowlisted guard/historical areas.
+
+Evidence handling:
+
+Evidence files should be neutralised where they are current status documents. Historical evidence may only retain deprecated provider names if absolutely unavoidable and explicitly allowlisted in the guard with a short justification. Prefer zero references.
+
+Add this neutral note where needed:
+
+“Earlier placeholder provider names have been removed. The platform uses provider-neutral compliance categories unless and until a specific provider is formally approved.”
+
+Validation required:
+
+- repo-wide rg before and after for:
+
+  cipc
+
+  onfido
+
+  dow.?jones
+
+  dow_jones
+
+  dow-jones
+
+  dowjones
+
+  refinitiv
+
+  world-check, only if used as Refinitiv branding
+
+- prebuild guard chain passes
+
+- relevant Vitest suites pass
+
+- VerifyNow Deno tests still pass
+
+- TypeScript check passes
+
+- build passes or closest available validation passes
+
+- no broken imports
+
+- no route breaks
+
+- no deprecated provider names remain outside explicit allowlist
+
+Required final report:
+
+1. Inventory of references found.
+
+2. Classification of references:
+
+   - deleted
+
+   - neutralised
+
+   - compatibility alias retained
+
+   - historical/migration allowlisted
+
+3. Files changed.
+
+4. Commit SHA(s).
+
+5. Exact wording/key replacements.
+
+6. Guards added/updated.
+
+7. Tests run and results.
+
+8. Any remaining references and why.
+
+9. Confirmation VerifyNow / idv-person-verify remains intact.
+
+10. Confirmation no migration/RLS/grant/schema/secret/frontend publish occurred unless explicitly justified.
+
+11. Final verdict.
+
+Expected verdict:
+
+DEPRECATED_COMPLIANCE_PROVIDER_REFERENCES_REMOVED_VERIFYNOW_INTACT
+
+If not complete:
+
+DEPRECATED_COMPLIANCE_PROVIDER_CLEANUP_PARTIAL_[CLEAR_REASON]

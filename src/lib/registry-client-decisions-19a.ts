@@ -100,7 +100,7 @@ export const BATCH_19A_EVIDENCE_MATRIX = {
     "declaration_of_authority_requested",
   ],
   close_corporation: [
-    "cipc_or_registry_evidence",
+    "company_registry_evidence",
     "claimant_id",
     "proof_of_member_status_or_member_mandate",
     "declaration",
