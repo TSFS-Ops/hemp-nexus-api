@@ -266,7 +266,7 @@ export default function Pricing() {
 
           {/* Footnote */}
           <p className="mt-10 text-center text-xs text-muted-foreground">
-            All prices in USD. Charged in USD at checkout via Paystack.
+            All prices in USD. Credits are purchased securely through PayFast.
             Pay-as-you-go billed per successful Proof of Intent.
             Institutional contracts include volume commitments and dedicated SLAs.
           </p>
