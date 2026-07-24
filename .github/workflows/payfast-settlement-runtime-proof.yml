@@ -28,19 +28,23 @@
 # several Supabase-platform-only features that some older, unrelated
 # migrations in this repository depend on (pg_cron scheduling, pg_net HTTP
 # calls, the pg_graphql/pgjwt/supabase_vault extensions, and the built-in
-# supabase_realtime publication used for realtime replication). The
-# migration-apply step below tolerates ONLY these specific, named,
-# Supabase-platform gaps (logging each one loudly as a known gap) and
-# hard-fails on any other migration error, so this remains fail-closed for
-# anything that could plausibly be related to PR #31 / payment_settlements.
-# The minimal storage.buckets/storage.objects stub tables are also extended
-# with a few extra nullable columns (file_size_limit, allowed_mime_types,
-# etc.) that some unrelated storage-bucket-seeding migrations insert into,
-# for the same reason.
+# supabase_realtime publication used for realtime replication). Each
+# migration file is applied WITHOUT ON_ERROR_STOP, matching psql's default
+# behaviour of continuing past an individual failing statement to the next
+# statement in the same file/session -- this avoids a single known,
+# unrelated, environment-only statement failure (e.g. one ALTER PUBLICATION
+# supabase_realtime line) truncating the rest of that migration file, which
+# could otherwise hide real schema this proof depends on. After all
+# migrations are applied, the full combined log is scanned for every
+# "ERROR:" line; any such line is required to match one of the specific,
+# named, known Supabase-platform gaps above, or the job fails closed. This
+# keeps the job fail-closed for anything that could plausibly be related to
+# PR #31 / payment_settlements while tolerating only named, pre-existing,
+# environment-only gaps.
 #
 # The final gate step in the proof SQL itself raises an exception (non-zero
-# psql exit) if any individual check failed, so a green job status here is a
-# genuine pass -- not a "look at the artifact" pass.
+# psql exit) if any individual behavioural check failed, so a green job
+# status here is a genuine pass -- not a "look at the artifact" pass.
 
 name: PayFast Settlement Runtime Proof
 
@@ -171,6 +175,11 @@ jobs:
           set -e
           shopt -s nullglob
           : > proof-artifact/20-migrate.txt
+          for f in supabase/migrations/*.sql; do
+            echo "-- Applying: $f" | tee -a proof-artifact/20-migrate.txt
+            psql -f "$f" >> proof-artifact/20-migrate.txt 2>&1 || true
+          done
+
           KNOWN_GAP_PATTERNS=(
             'extension "pg_cron" is not available'
             'extension "pg_net" is not available'
@@ -179,29 +188,28 @@ jobs:
             'extension "supabase_vault" is not available'
             'publication "supabase_realtime" does not exist'
           )
-          for f in supabase/migrations/*.sql; do
-            echo "-- Applying: $f" | tee -a proof-artifact/20-migrate.txt
-            set +e
-            psql -v ON_ERROR_STOP=1 -f "$f" > /tmp/mig_out.txt 2>&1
-            status=$?
-            set -e
-            cat /tmp/mig_out.txt | tee -a proof-artifact/20-migrate.txt
-            if [ $status -ne 0 ]; then
-              known=0
-              for pat in "${KNOWN_GAP_PATTERNS[@]}"; do
-                if grep -qF "$pat" /tmp/mig_out.txt; then
-                  known=1
-                  echo "KNOWN_ENV_GAP ($pat): pre-existing Supabase-platform-only dependency, unrelated to PR #31 -- tolerated, continuing" | tee -a proof-artifact/20-migrate.txt
-                  break
-                fi
-              done
-              if [ "$known" -eq 0 ]; then
-                echo "UNEXPECTED_MIGRATION_FAILURE in $f (exit=$status)" | tee -a proof-artifact/20-migrate.txt
-                exit "$status"
-              fi
+
+          grep -n 'ERROR:' proof-artifact/20-migrate.txt > /tmp/all_errors.txt || true
+          : > /tmp/unexpected_errors.txt
+          while IFS= read -r line; do
+            known=0
+            for pat in "${KNOWN_GAP_PATTERNS[@]}"; do
+              case "$line" in
+                *"$pat"*) known=1 ;;
+              esac
+              if [ "$known" -eq 1 ]; then break; fi
+            done
+            if [ "$known" -eq 0 ]; then
+              echo "$line" >> /tmp/unexpected_errors.txt
             fi
-          done
-          echo "MIGRATIONS_APPLIED=ok" | tee -a proof-artifact/20-migrate.txt
+          done < /tmp/all_errors.txt
+
+          if [ -s /tmp/unexpected_errors.txt ]; then
+            echo "UNEXPECTED_MIGRATION_FAILURES:" | tee -a proof-artifact/20-migrate.txt
+            cat /tmp/unexpected_errors.txt | tee -a proof-artifact/20-migrate.txt
+            exit 1
+          fi
+          echo "MIGRATIONS_APPLIED=ok (all ERROR lines matched known, pre-existing, unrelated Supabase-platform gaps)" | tee -a proof-artifact/20-migrate.txt
 
       - name: Run PayFast settlement runtime proof [fail-closed]
         run: |
