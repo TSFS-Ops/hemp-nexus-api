@@ -147,21 +147,21 @@ Deno.test("Batch V-UI-Fix-4 -- VERIFYNOW_MODE is never overridden to production 
   );
 });
 
-Deno.test("Batch V-UI-Fix-4 -- idv-verify (legacy entity/KYB function) remains untouched by this batch", async () => {
+Deno.test("Batch V-UI-Fix-4 -- idv-verify (legacy entity/KYB function) reflects deprecated-provider cleanup", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
-  // Same allow-list contract as before Fix-4 -- proves this batch did not
-  // touch the legacy function's provider dispatch.
+  // After the deprecated-compliance-provider cleanup, only companies_house
+  // remains on the company allow-list and the individual allow-list is empty.
   assert(
-    /const\s+COMPANY_ALLOWED_PROVIDERS\s*=\s*\[\s*"companies_house"\s*,\s*"cipc"\s*\]\s*as\s+const/.test(
+    /const\s+COMPANY_ALLOWED_PROVIDERS\s*=\s*\[\s*"companies_house"\s*\]\s*as\s+const/.test(
       src,
     ),
-    "idv-verify's company allow-list must be unchanged",
+    "idv-verify's company allow-list must be exactly [companies_house]",
   );
   assert(
-    /const\s+INDIVIDUAL_ALLOWED_PROVIDERS\s*=\s*\[\s*"onfido"\s*\]\s*as\s+const/.test(
+    /const\s+INDIVIDUAL_ALLOWED_PROVIDERS\s*:\s*readonly\s+string\[\]\s*=\s*\[\s*\]/.test(
       src,
     ),
-    "idv-verify's individual allow-list must be unchanged",
+    "idv-verify's individual allow-list must be empty",
   );
   assert(
     !src.includes("idv-person-verify"),
