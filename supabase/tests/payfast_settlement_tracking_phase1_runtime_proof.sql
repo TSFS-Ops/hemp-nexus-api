@@ -145,6 +145,19 @@ INSERT INTO public.organizations (id, name) VALUES
   ('33333333-3333-3333-3333-333333333333', 'Runtime Proof Test Org')
 ON CONFLICT (id) DO NOTHING;
 
+-- Schema-quirk workaround (unrelated to PR #31): a later migration
+-- redefines public.handle_new_user() (fired by the on_auth_user_created
+-- trigger on auth.users) to call an internal provisioning helper that reads
+-- public.team_invitations. That table is not created by any migration in
+-- this repository, so ANY insert into auth.users -- including this proof's
+-- own throwaway fixture users -- fails with
+-- "relation public.team_invitations does not exist" unless the trigger is
+-- disabled first. This is a pre-existing repo gap unrelated to PR #31's
+-- payment_settlements work; disabling the trigger only affects this
+-- disposable, single-use proof database and is recorded here plus in the
+-- accompanying report rather than silently worked around.
+ALTER TABLE auth.users DISABLE TRIGGER ALL;
+
 INSERT INTO auth.users (id, email) VALUES
   ('aaaaaaaa-0000-0000-0000-000000000001', 'runtime-proof-admin@example.test'),
   ('aaaaaaaa-0000-0000-0000-000000000002', 'runtime-proof-auditor@example.test'),
